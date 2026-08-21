@@ -1,0 +1,48 @@
+{
+  "version": 1,
+
+  "repo": "OWNER/REPO",
+  "baseBranch": "main",
+  "branchPrefix": "feature/",
+  "commitLanguage": "ja",
+
+  "commands": {
+    "lint": null,
+    "format": null,
+    "typecheck": null,
+    "test": null,
+    "e2e": null,
+    "build": null
+  },
+
+  "tracker": {
+    "type": "issues-only"
+  },
+
+  "rules": {
+    "dir": ".claude/rules",
+    "referenceDir": "docs/rules-reference",
+    "archiveDir": "docs/rules-archive",
+    "maxTotalBytes": 150000,
+    "maxFileBytes": 20480
+  },
+
+  "review": {
+    "requirementsCycles": 3,
+    "designCycles": 3,
+    "implementationCycles": 2,
+    "testCoverageCycles": 3,
+    "auditRounds": 5,
+    "auditCycles": 3,
+    "verifyRetries": 3,
+    "ciFixPushes": 3,
+    "ciReviewRounds": 5
+  },
+
+  "verify": {
+    "backend": "devtools",
+    "baseUrl": "http://localhost:3000"
+  },
+
+  "siblingRepos": []
+}

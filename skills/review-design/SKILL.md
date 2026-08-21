@@ -1,0 +1,105 @@
+---
+name: review-design
+description: GitHub Issue の `## Implementation Design` コメントを `.claude/rules/` と突合し、方針評価の網羅性 / 影響ファイル網羅 / 同期必須ポイント / リスク対策 / テスト計画 / 合格基準の過不足を Critical / Important / Suggestion 別レポートで返す。修正はしない。「設計レビュー」「review-design」「実装設計レビュー」、design-implementation / implement-issue の付随観点として使用してください。
+argument-hint: '[issue番号]'
+allowed-tools: Bash(gh *), Bash(git *), Bash(grep:*), Bash(rg:*), Bash(bash *), Read, Glob, Grep, AskUserQuestion
+---
+
+# review-design — 実装設計の突合
+
+Issue に投稿された `## Implementation Design` を、`.claude/rules/` の設計・テスト・同期必須ポイント規約に照らして過不足を判定する。**修正は行わない**。レポート出力のみ。
+
+## 設計意図
+
+- **ルールが SoT** — 判定基準は `.claude/rules/` を毎回 Read して評価する
+- **要件・コードレビューと分離** — 「要件品質」は `/review-requirements`、「バグ検出」はコードレビューの役割。ここは「設計が実装に落とし込み可能・網羅的か」のみ
+- **根拠明示** — 各 finding に「どのルールの何節か」を必ず添える
+- **同期必須ポイントの機械照合** — `.claude/rules/` の同期表を 1 行ずつ突き合わせる
+
+## 合格基準
+
+- [ ] `## Implementation Design` セクションが存在する
+- [ ] **影響ファイルが具体パスで列挙**されている（「関連ファイル」のような抽象表現でない）
+- [ ] **同期必須ポイント**に該当する変更なら、同期先が全て設計に含まれている
+- [ ] **方針評価**が存在し、各候補に pros/cons と採用根拠が付いている
+- [ ] **リスクと対策**が列挙されている
+- [ ] **テスト計画**が、変更のリスクの高さに見合った層をカバーしている
+- [ ] **合格基準**（実装完了の判定条件）が明示されている
+- [ ] スキーマ変更を含むなら、マイグレーション方式と関連リポへの同期計画がある
+
+## PASS / FAIL 判定
+
+- **PASS: Critical = 0** / **FAIL: Critical ≥ 1**
+- Important / Suggestion は集計のみ。PASS/FAIL に影響しない
+
+## 手順
+
+### 1. ルール群を Read（毎回最新で評価）
+
+```bash
+DEVKIT_ENV=$(bash .claude/devkit/config.sh) || exit 1
+eval "$DEVKIT_ENV"
+cd "$DEVKIT_ROOT"
+ls "$DEVKIT_RULES_DIR"/*.md
+```
+
+### 2. Issue と設計の取得
+
+```bash
+gh issue view ${ISSUE_NUMBER} --repo "$DEVKIT_REPO" --json number,title,body,comments
+```
+
+### 3. 設計パース
+
+影響範囲 / スキーマ・API 変更 / 同期必須ポイント / 方針評価 / 実装方針 / リスク / テスト計画 / 合格基準 を抽出する。**セクション欠落は finding に立てる。**
+
+### 4. 突合（採点）
+
+| 観点 | Critical | Important | Suggestion |
+|---|---|---|---|
+| 影響ファイル網羅 | 変更が必要なファイルが設計に無い | パスが抽象的 | 補足を足せる |
+| 同期必須ポイント | 該当するのに同期先が欠落 | 一部のみ言及 | — |
+| 方針評価 | 複数方針がありうるのに評価が無い / 採用根拠なし | pros/cons が薄い | 別案を足せる |
+| リスク対策 | リスクの高い領域に触るのに対策が無い | 対策が具体性を欠く | — |
+| テスト計画 | リスクの高い変更にテスト計画が無い / 回帰テストの記載が無い | 層の割り当てが不明確 | ケースを足せる |
+| 合格基準 | 明示されていない | 判定不能な表現 | — |
+| スキーマ変更 | マイグレーション方式・同期計画が無い | 順序の記載が無い | — |
+
+**同期必須ポイントの照合は機械的に行う。** `.claude/rules/` の同期表の各行について「この変更が該当するか / 該当するなら設計に同期先が入っているか」を 1 行ずつ判定し、`該当 N 件 / 網羅 M 件` の形で報告する。
+
+### 5. レポート出力
+
+```markdown
+# 設計レビュー — Issue #${ISSUE_NUMBER}
+
+## 1. 対象
+## 2. 影響ファイル網羅
+## 3. 同期必須ポイント（該当 N / 網羅 M）
+## 4. 方針評価の網羅性
+## 5. リスク対策
+## 6. テスト計画
+## 7. 合格基準
+## 8. Severity 別
+### Critical
+### Important
+### Suggestion
+```
+
+### 6. 返却データ構造（呼出側パース用）
+
+`/review-requirements` と**同一形式**の `json findings` ブロックをレポート末尾に出力する（フィールド仕様も同じ）。
+
+## エラーハンドリング
+
+| 状況 | 挙動 |
+|---|---|
+| `## Implementation Design` が無い | Critical 1 件として返し、`/design-implementation` を促す |
+| `## Requirements` が無い | Critical 1 件（設計の前提が無い）として返す |
+| Issue 取得失敗 | **停止して報告**。空で進めない |
+| ルールディレクトリが空 | Suggestion 1 件 + レポート冒頭に明記（PASS と誤読させない） |
+
+## Notes
+
+- **修正はしない。** レポートのみ
+- **他の skill の SKILL.md 全文を Read しない**。公開契約（description + 本 SKILL の合格基準）のみを判定契約とする
+- 節参照は節名で書く（番号は統廃合で壊れる）

@@ -1,0 +1,9 @@
+{
+  "name": "claude-devkit",
+  "version": "0.1.0",
+  "description": "Issue から PR までを自律ループで回す、プロジェクト非依存の開発ハーネス",
+  "author": {
+    "name": "syu"
+  },
+  "keywords": ["workflow", "code-review", "github", "issue", "testing", "rules"]
+}

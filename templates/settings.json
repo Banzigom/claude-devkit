@@ -1,0 +1,17 @@
+{
+  "_comment": "claude-devkit の hooks 雛形。既存の .claude/settings.json がある場合はマージすること（上書きしない）。プロジェクト固有の同期チェック（スキーマ同期・env 配布・生成物のドリフト等）は、必要になってから SessionStart / FileChanged に足す。FileChanged の matcher はベースネームのみでパス・glob は使えない（複数は | 区切り）。",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/devkit/rules-size-check.sh\" --no-base 2>/dev/null || true",
+            "timeout": 15,
+            "statusMessage": "rules の肥大化チェック中..."
+          }
+        ]
+      }
+    ]
+  }
+}

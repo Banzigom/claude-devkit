@@ -1,0 +1,66 @@
+{
+  "version": 1,
+
+  "repo": "acme/webapp",
+  "baseBranch": "release",
+  "branchPrefix": "feature/#",
+  "commitLanguage": "ja",
+
+  "commands": {
+    "lint": "npm run lint",
+    "format": "npm run fix:format",
+    "typecheck": "npm run check:type",
+    "test": "npm run test:ci",
+    "e2e": "npm run test:e2e",
+    "build": "npm run build"
+  },
+
+  "tracker": {
+    "type": "github-project",
+    "owner": "acme",
+    "projectNumber": 4,
+    "projectId": "PVT_xxxxxxxxxxxx",
+    "statusFieldId": "PVTSSF_xxxxxxxxxxxx",
+    "status": {
+      "defined": "aaaaaaaa",
+      "ready": "bbbbbbbb",
+      "inProgress": "cccccccc",
+      "done": "dddddddd"
+    },
+    "sizeFieldId": "PVTSSF_yyyyyyyyyyyy",
+    "sizeOptions": { "XS": "1111", "S": "2222", "M": "3333", "L": "4444", "XL": "5555" },
+    "estimateFieldId": "PVTF_zzzzzzzzzzzz",
+    "tagFieldId": null,
+    "tagOptions": {}
+  },
+
+  "rules": {
+    "dir": ".claude/rules",
+    "referenceDir": "docs/rules-reference",
+    "archiveDir": "docs/rules-archive",
+    "maxTotalBytes": 150000,
+    "maxFileBytes": 20480
+  },
+
+  "review": {
+    "requirementsCycles": 3,
+    "designCycles": 3,
+    "implementationCycles": 2,
+    "testCoverageCycles": 3,
+    "auditRounds": 5,
+    "auditCycles": 3,
+    "verifyRetries": 3,
+    "ciFixPushes": 3,
+    "ciReviewRounds": 5
+  },
+
+  "verify": {
+    "backend": "devtools",
+    "baseUrl": "http://localhost:3000"
+  },
+
+  "siblingRepos": [
+    { "name": "api", "path": "../api", "role": "backend" },
+    { "name": "infra", "path": "../infra", "role": "infrastructure" }
+  ]
+}
