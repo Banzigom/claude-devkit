@@ -16,7 +16,45 @@
   },
 
   "tracker": {
-    "type": "issues-only"
+    "type": "issues-only",
+    "_workableStatuses_note": "daily-schedule が「本日やる対象」とみなす Status の表示名（github-project のとき）",
+    "workableStatuses": [],
+    "_releaseStatusOrder_note": "sync-release-status / release-progress-report が使う Status の前進順（先頭が最も手前）。差し戻し系の Status はここに入れない",
+    "releaseStatusOrder": [],
+    "_statusOptionIds_note": "Status 表示名 -> single-select option ID。releaseStatusOrder の全 Status 分を入れる",
+    "statusOptionIds": {}
+  },
+
+  "infra": {
+    "_note": "層2（運用系スキル）が使う。使わないなら空のままでよい",
+    "platform": null,
+    "cloud": null,
+    "environments": [],
+    "clusterPattern": null,
+    "namespacePattern": null,
+    "services": [],
+    "registry": null,
+    "iacRepo": null,
+    "healthPath": null
+  },
+
+  "database": {
+    "_note": "スキーマ / マイグレーションの系統。複数 DB 構成に対応する",
+    "orm": null,
+    "schemas": []
+  },
+
+  "report": {
+    "_note": "release-progress-report の投稿先。null なら投稿せず出力のみ",
+    "slackChannelId": null
+  },
+
+  "schedule": {
+    "estimateCoefficient": 0.6,
+    "hoursPerDay": 8,
+    "slotMinutes": 30,
+    "timeZone": "Asia/Tokyo",
+    "titlePrefix": "TASK"
   },
 
   "rules": {
@@ -44,5 +82,6 @@
     "baseUrl": "http://localhost:3000"
   },
 
-  "siblingRepos": []
+  "siblingRepos": [],
+  "_siblingRepos_note": "clone / 横断スキャン / ドリフト検出の対象。要素は { name, path, repo?, baseBranch?, role? }。repo は OWNER/NAME（clone に使う）、baseBranch 省略時は上の baseBranch を使う"
 }

@@ -2,7 +2,7 @@
 name: harvest
 description: 会話セッションから知見を抽出し、.claude/rules/ に永続化する。「harvest」「知見抽出」「学び整理」「今回の学びを残して」と言われた時に使用してください。
 argument-hint: '[--pr]'
-allowed-tools: Bash(git *), Bash(gh *), Bash(bash *), Bash(mkdir *), Bash(cp *), Read, Write, Edit, Glob, Grep, AskUserQuestion
+allowed-tools: Bash(git *), Bash(gh *), Bash(bash *), Bash(mkdir *), Bash(cp *), Read, Write, Edit, Glob, Grep, AskUserQuestion, Bash(jq *)
 ---
 
 # harvest — 知見の収穫
@@ -100,6 +100,24 @@ bash .claude/devkit/rules-size-check.sh
 ```
 
 **行数でなくバイト数で判定する。** Learned は「1 エントリ = 1 長行」形式のため行数は実態を捉えない（110 行で 48 KB になりうる）。
+
+| 検証 | FAIL の意味 |
+|---|---|
+| 1 サイズ | 合計が上限超過 / ファイル単体が閾値超過 |
+| 2 見出し保全 | base にあった見出しが消えた（移動は許容） |
+| 3 エントリ保存則 | 知見の総数が減った（統合したなら `Merged-Entries: <n>` を書く） |
+| 4 リンク解決 | 相対リンクの先が無い |
+| 5 釣り合わせ | **増やしたのに退避していない** |
+
+### 追記したら同じ変更で同量を退避する
+
+🔴 **この harvest で `.claude/rules/` を 2 KB 超増やすなら、同じ PR で同等バイトを退避先へ移す。**
+
+肥大化が繰り返される原因は、**harvest が追記だけを行い削減と非対称**なことにある。「気づいた人が後でアーカイブする」運用では再発が止まらないので、**増やした変更自身に釣り合わせを求める**（検証 5）。
+
+- 退避先は `$DEVKIT_RULES_REF_DIR`（現役だが常駐不要）と `$DEVKIT_RULES_ARCHIVE_DIR`（解消済み・一度きり）。どちらも自動読み込みされない
+- **消すのではなく動かす。** 検証 2（見出し保全）／検証 3（エントリ保存則）が消失を別途禁じている
+- **本当に出せるものが無いときだけ `--allow-growth` を付ける。** 黙って増やせない形にするためのフラグなので、使ったら PR 本文に理由を書く
 
 FAIL / 警告が出たら以下を提案する:
 

@@ -2,18 +2,18 @@
   "name": "claude-devkit",
   "id": "claude-devkit",
   "owner": {
-    "name": "syu"
+    "name": "ReadMe"
   },
   "metadata": {
-    "description": "Issue から PR までを自律ループで回す、プロジェクト非依存の開発ハーネス",
-    "version": "0.1.0"
+    "description": "Issue から PR までの自律開発ループに加え、リリース運用・課題管理連携・インフラ運用・知見管理までを収録した、プロジェクト非依存の開発ハーネス",
+    "version": "0.2.0"
   },
   "plugins": [
     {
       "name": "claude-devkit",
       "source": "./",
-      "description": "要件定義 → 設計 → 実装 → レビュー → PR を統括する開発フロー skill 群と、それぞれを独立コンテキストで走らせる sub-agent 群。プロジェクト固有値は .claude/devkit.json に外出しされており、どのリポジトリにも投入できる。",
-      "version": "0.1.0",
+      "description": "要件定義 → 設計 → 実装 → レビュー → PR を統括する開発フロー skill 群と、それぞれを独立コンテキストで走らせる sub-agent 群。加えてリリース Status の一括遷移・進捗集計・セキュリティ監査・インフラ運用・スキーマ同期・知見管理を収録。プロジェクト固有値は .claude/devkit.json に外出しされており、どのリポジトリにも投入できる。",
+      "version": "0.2.0",
       "keywords": ["workflow", "code-review", "github", "issue", "testing", "rules"],
       "category": "workflow"
     }

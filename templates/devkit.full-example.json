@@ -31,7 +31,52 @@
     "sizeOptions": { "XS": "1111", "S": "2222", "M": "3333", "L": "4444", "XL": "5555" },
     "estimateFieldId": "PVTF_zzzzzzzzzzzz",
     "tagFieldId": null,
-    "tagOptions": {}
+    "tagOptions": {},
+    "workableStatuses": ["Defined", "Ready", "In progress", "Rework", "Released to dev"],
+    "releaseStatusOrder": ["Backlog", "Defined", "Ready", "In progress", "Released to dev", "Verified on dev", "Released to stg", "Verified on stg", "Released to prd", "Done"],
+    "statusOptionIds": {
+      "In progress": "cccccccc",
+      "Released to dev": "eeeeeeee",
+      "Verified on dev": "ffffffff",
+      "Released to stg": "gggggggg",
+      "Verified on stg": "hhhhhhhh",
+      "Released to prd": "iiiiiiii",
+      "Done": "dddddddd"
+    },
+    "reworkStatus": "Rework"
+  },
+
+  "infra": {
+    "platform": "kubernetes",
+    "cloud": "gcp",
+    "environments": ["dev", "stg", "prd"],
+    "clusterPattern": "myapp-{env}-cluster",
+    "namespacePattern": "{env}-myapp",
+    "services": ["web", "api", "worker"],
+    "registry": "asia-northeast1-docker.pkg.dev/example-project/app-images",
+    "iacRepo": "infra",
+    "healthPath": "/api/health"
+  },
+
+  "database": {
+    "orm": "prisma",
+    "schemas": [
+      { "name": "app",    "path": "prisma/schema.prisma",        "engine": "postgresql", "migrateCommand": "make migrate",        "emptyMigrateCommand": "make migrate-empty" },
+      { "name": "shared", "path": "prisma-shared/schema.prisma", "engine": "mysql",      "migrateCommand": "make migrate-shared", "emptyMigrateCommand": "make migrate-shared-empty" }
+    ]
+  },
+
+  "report": {
+    "_note": "release-progress-report の投稿先。null なら投稿せず出力のみ",
+    "slackChannelId": null
+  },
+
+  "schedule": {
+    "estimateCoefficient": 0.6,
+    "hoursPerDay": 8,
+    "slotMinutes": 30,
+    "timeZone": "Asia/Tokyo",
+    "titlePrefix": "TASK"
   },
 
   "rules": {
@@ -60,7 +105,7 @@
   },
 
   "siblingRepos": [
-    { "name": "api", "path": "../api", "role": "backend" },
-    { "name": "infra", "path": "../infra", "role": "infrastructure" }
+    { "name": "api",   "path": "../api",   "repo": "acme/api",   "baseBranch": "release", "role": "backend" },
+    { "name": "infra", "path": "../infra", "repo": "acme/infra", "baseBranch": "main",    "role": "infrastructure" }
   ]
 }

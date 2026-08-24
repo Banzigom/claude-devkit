@@ -16,6 +16,22 @@ allowed-tools: Skill, Agent, Bash(git *), Bash(gh *), Bash(make *), Bash(npm *),
 - **網羅的に集めてから一括修正** — 多角的に集めてから直す
 - **収束ループ** — 修正で混入した新規バグも次サイクルで検出される
 
+## エビデンス記録
+
+保存先の準備・命名・秘匿情報の扱い・コメント形式は [エビデンス記録の共通規約](../../docs/evidence.md) に従う。**サイクル開始前に 1 回**準備する。
+
+| ファイル | 内容 |
+|---|---|
+| `logs/review-cycle<C>-round<R>.md` | 各ラウンドの findings（Critical / Important / Suggestion） |
+| `logs/test-coverage-cycle<C>.md` | テスト網羅レビューの出力 |
+| `logs/lint-cycle<C>.txt` / `logs/test-cycle<C>.txt` | 修正後の lint / test 出力 |
+| `logs/fix-summary-cycle<C>.md` | 適用した修正の要点 + `git diff --stat` |
+| `summary.md` | 収束判定・全サイクル通しの Critical / Important 推移 |
+
+**ラウンドごとの findings をファイルに落とす理由は、重複検出（手順 2.3）の根拠がコンテキストの記憶ではなく実データになるから。** 落とさないと「×3」の回数が後から検証できない。
+
+完了時のコメントには**未解決の Critical**（上限到達時）を必ず含める。
+
 ## 合格基準
 
 - **Critical（バグ・セキュリティ・テスト欠落）= 0 件**

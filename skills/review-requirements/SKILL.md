@@ -134,6 +134,24 @@ gh issue view ${ISSUE_NUMBER} --repo "$DEVKIT_REPO" --json number,title,body,lab
 | Issue 取得失敗（レート制限 / 認証） | **停止して報告**。空で進めない（「指摘 0 件 = PASS」と誤認するため） |
 | ルールディレクトリが空 | 評価対象なしとして Suggestion 1 件を返し、その旨をレポート冒頭に明記（**PASS と誤読させない**） |
 
+## 進捗ログ
+
+呼出側（`implement-issue`）が状況を追えるよう節目で出力する:
+
+- 起動時: `▶ /review-requirements #${ISSUE_NUMBER} を起動`
+- ルール Read 完了: `📚 ルール群 Read 完了（N ファイル）`
+- 突合完了: `📊 突合: Critical=X / Important=Y / Suggestion=Z`
+- 判定: `✅ PASS（Critical=0）` / `⚠️ FAIL（Critical=X）`
+
+## 呼出側への返り方
+
+| 状況 | exit | 呼出側の扱い |
+|---|---|---|
+| PASS | `0` | `summary.passed: true` |
+| FAIL（Critical ≥ 1） | `0` | `summary.passed: false`。**異常終了ではない** |
+| 前提の欠落（`## Requirements` 無し） | `0` | Critical 1 件として返す |
+| ルール Read 失敗 / Issue 取得失敗 | `2` / `3` | **レビュー失敗として記録し、工程は継続する（フェイルオープン）**。「指摘 0 件 = PASS」と誤認させない |
+
 ## Notes
 
 - **修正はしない。** レポートのみ

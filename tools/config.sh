@@ -51,6 +51,10 @@ emit() { # emit <VAR_NAME> <jq_path> [default]
 }
 
 printf 'export DEVKIT_ROOT=%s\n' "$(printf '%q' "$ROOT")"
+# 配列（siblingRepos）は bash 3.2 では素直に export できないので、設定ファイルの
+# パスだけ渡して呼び出し側が jq で読む:
+#   jq -r '.siblingRepos[] | "\(.name)\t\(.path)\t\(.repo // "")"' "$DEVKIT_CONFIG"
+printf 'export DEVKIT_CONFIG=%s\n' "$(printf '%q' "$CFG")"
 emit DEVKIT_REPO              '.repo'
 emit DEVKIT_BASE_BRANCH       '.baseBranch' 'main'
 emit DEVKIT_BRANCH_PREFIX     '.branchPrefix' 'feature/'
@@ -91,6 +95,24 @@ emit DEVKIT_AUDIT_CYCLES      '.review.auditCycles' '3'
 emit DEVKIT_VERIFY_RETRIES    '.review.verifyRetries' '3'
 emit DEVKIT_CI_FIX_PUSHES     '.review.ciFixPushes' '3'
 emit DEVKIT_CI_REVIEW_ROUNDS  '.review.ciReviewRounds' '5'
+
+emit DEVKIT_INFRA_PLATFORM    '.infra.platform'
+emit DEVKIT_INFRA_CLOUD       '.infra.cloud'
+emit DEVKIT_INFRA_CLUSTER     '.infra.clusterPattern'
+emit DEVKIT_INFRA_NAMESPACE   '.infra.namespacePattern'
+emit DEVKIT_INFRA_REGISTRY    '.infra.registry'
+emit DEVKIT_INFRA_IAC_REPO    '.infra.iacRepo'
+emit DEVKIT_INFRA_HEALTH_PATH '.infra.healthPath'
+emit DEVKIT_DB_ORM            '.database.orm'
+
+emit DEVKIT_REWORK_STATUS     '.tracker.reworkStatus'
+emit DEVKIT_SLACK_CHANNEL     '.report.slackChannelId'
+
+emit DEVKIT_SCHED_COEF        '.schedule.estimateCoefficient' '0.6'
+emit DEVKIT_SCHED_HOURS       '.schedule.hoursPerDay' '8'
+emit DEVKIT_SCHED_SLOT        '.schedule.slotMinutes' '30'
+emit DEVKIT_SCHED_TZ          '.schedule.timeZone' 'Asia/Tokyo'
+emit DEVKIT_SCHED_PREFIX      '.schedule.titlePrefix' 'TASK'
 
 emit DEVKIT_VERIFY_BACKEND    '.verify.backend' 'devtools'
 emit DEVKIT_VERIFY_BASE_URL   '.verify.baseUrl'

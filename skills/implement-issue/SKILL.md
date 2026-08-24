@@ -2,7 +2,7 @@
 name: implement-issue
 description: GitHub Issue を起点に、要件定義→設計→ブランチ→実装→lint/test→動作確認→セルフレビュー→ルール整備→コミット→PR作成→レビュー対応 までを統括する。各工程は合格基準を満たすまで自律ループ。自走モード（--autopilot）で設計承認後はマージ直前まで一気通貫で進める。マージはしない。「issue を実装」「implement-issue」「#340 やって」「最後まで一気に」「自走で」「全部やって」と言われた時に使用してください。
 argument-hint: '[issue番号] [--autopilot]'
-allowed-tools: Skill, Agent, Bash(git *), Bash(gh *), Bash(make *), Bash(npm *), Bash(yarn *), Bash(pnpm *), Bash(npx *), Bash(python *), Bash(pytest *), Bash(bash *), Read, Edit, Write, Glob, Grep, AskUserQuestion
+allowed-tools: Skill, Agent, Bash(git *), Bash(gh *), Bash(make *), Bash(npm *), Bash(yarn *), Bash(pnpm *), Bash(npx *), Bash(python *), Bash(pytest *), Bash(bash *), Read, Edit, Write, Glob, Grep, AskUserQuestion, Bash(jq *)
 ---
 
 # implement-issue — Issue → PR の統括

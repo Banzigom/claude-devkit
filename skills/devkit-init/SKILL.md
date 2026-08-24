@@ -56,6 +56,12 @@ lint / test / build コマンドは、存在するファイルから拾う（**�
 
 **CI の実行コマンドと `package.json` の scripts が食い違う場合は CI 側を採る。** ローカル用スクリプトは使われないまま古くなりやすく、devkit の lint / test ゲートは「CI と同じものが通ること」を目的とするため。
 
+### 2.5 その他の確定値
+
+- **`commitLanguage`** — コミットメッセージの言語（`ja` / `en`）。**既存のコミット履歴から推測して確認を取る**（`git log --oneline -20`）
+- **`verify.baseUrl`** — ローカル開発サーバの URL。`package.json` の dev スクリプトや compose のポート定義から推測する
+- **`verify.backend`** — 既定の実機検証バックエンド。**対象が localhost 中心なら `devtools`、認証必須の共有環境中心なら `cic`**（`/verify-browser` は起動ごとに確認するので、ここは既定値にすぎない）
+
 ### 3. 課題管理の確認
 
 ```bash
@@ -82,6 +88,30 @@ gh project list --owner <owner> --format json | jq '.projects[] | {number, id, t
 
 取得した値を `tracker` に書き込む。Status の option 名はプロジェクトごとに違うので、**`defined` / `ready` / `inProgress` / `done` の 4 つの役割にどの option を割り当てるか**をユーザーに確認する（役割に対応する option が無ければ null のままでよい。その工程だけスキップされる）。
 
+あわせて次の 4 つも確認して書く（運用系 skill が使う）:
+
+| キー | 用途 | 未設定だと |
+|---|---|---|
+| `workableStatuses` | `/daily-schedule` が「本日やる対象」とみなす Status 名 | 実行時に毎回ユーザーへ確認が入る |
+| `releaseStatusOrder` | `/sync-release-status` `/release-progress-report` の前進順 | 一括遷移・集計順が決まらない |
+| `statusOptionIds` | Status 表示名 → option ID | 一括遷移が実行できない |
+| `reworkStatus` | 差し戻し Status の名前 | 差し戻しを前進フローに混ぜる事故を防げない |
+
+🔴 **`releaseStatusOrder` に差し戻し Status を入れない**（ボード上の並び順が途中でも、意味は前進フローの一段階ではない）。
+
+### 3.2 運用系（層 2 / 層 3）を使う場合の追加設定
+
+使う予定があるものだけ埋める。**空のままでも他の skill は動く。**
+
+| セクション | 使う skill |
+|---|---|
+| `siblingRepos` | `/pull-all` `/onboarding` `/security-review` `/sync-docs` `/schema-sync` `/vulnerability-fix` |
+| `infra` | `/app-log-monitor` `/app-rollback` `/maintenance-mode` `/error-investigation` `/registry-cleanup` `/kube-debug-db` |
+| `database` | `/assist-migration` `/schema-sync` |
+| `schedule` `report` | `/daily-schedule` `/release-progress-report` |
+
+**推測で埋めない。** 使う段になってユーザーに聞く方が、間違った値で全工程が空振りするより安全。
+
 ### 4. `.claude/devkit.json` を書き出す
 
 テンプレートは `templates/devkit.json`（プラグイン同梱）。推測値・確認値を埋めて `.claude/devkit.json` として書く。
@@ -94,10 +124,14 @@ gh project list --owner <owner> --format json | jq '.projects[] | {number, id, t
 
 ```bash
 mkdir -p .claude/devkit
-cp <plugin>/tools/config.sh            .claude/devkit/config.sh
-cp <plugin>/tools/rules-size-check.sh  .claude/devkit/rules-size-check.sh
+cp <plugin>/tools/config.sh              .claude/devkit/config.sh
+cp <plugin>/tools/rules-size-check.sh    .claude/devkit/rules-size-check.sh
+cp <plugin>/tools/project-items-fetch.sh .claude/devkit/project-items-fetch.sh   # tracker=github-project のみ
+cp -r <plugin>/tools/wording-fix-gate    .claude/devkit/wording-fix-gate         # /merge-wording-fix を使う場合のみ
 chmod +x .claude/devkit/*.sh
 ```
+
+**条件付きのものは「使う場合のみ」コピーする。** 使わないスクリプトを置くと、次に読む人が「これは何のために動いているのか」を調べる羽目になる。
 
 配置直後に**必ず動作確認する**（設定の書き間違いはここでしか捕まらない）:
 
@@ -125,6 +159,8 @@ eval "$DEVKIT_ENV"; echo "repo=$DEVKIT_REPO base=$DEVKIT_BASE_BRANCH lint=$DEVKI
 
 雛形は `templates/settings.json`。中身は「rules の肥大化チェックをセッション開始時に走らせる」1 本だけ。プロジェクト固有の同期チェック（スキーマ同期・env 配布等）は、必要になってから足す。
 
+`/merge-wording-fix` を使う場合のみ、`PreToolUse` にマージゲートの hook も足す（登録方法は [wording-fix-gate/README.md](../../tools/wording-fix-gate/README.md)）。🔴 **この hook は Claude のあらゆるマージ呼び出しをブロックするので、入れる前にチームへ周知する。**
+
 ### 8. 導入結果の報告
 
 ```
@@ -142,6 +178,8 @@ devkit-init 完了
 - `bash .claude/devkit/config.sh` が exit 0 で `DEVKIT_REPO` を出力する
 - `tracker.type` が `github-project` なら、`projectId` と `statusFieldId` が両方埋まっている（片方だけだと Status 遷移が実行時に失敗する）
 - `bash .claude/devkit/rules-size-check.sh` が exit 0 で終わる（rules を配置した場合）
+- `tracker.type` が `github-project` なら `bash .claude/devkit/project-items-fetch.sh /tmp/check.json` が exit 0 で item を取得する（**0 件で成功したら owner / number の設定違いを疑う**）
+- 配置したスクリプトが**設定を実際に読めている**（`config.sh` の出力に `DEVKIT_REPO` が入っている）
 
 ## Notes
 

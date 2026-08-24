@@ -1,9 +1,10 @@
 {
   "name": "claude-devkit",
-  "version": "0.1.0",
-  "description": "Issue から PR までを自律ループで回す、プロジェクト非依存の開発ハーネス",
+  "version": "0.2.0",
+  "description": "Issue から PR までの自律開発ループに加え、リリース運用・課題管理連携・インフラ運用・知見管理までを収録した、プロジェクト非依存の開発ハーネス",
   "author": {
-    "name": "syu"
+    "name": "ReadMe"
   },
+  "license": "MIT",
   "keywords": ["workflow", "code-review", "github", "issue", "testing", "rules"]
 }

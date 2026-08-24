@@ -4,7 +4,9 @@ Issue から PR までを自律ループで回す、**プロジェクト非依�
 
 要件定義 → 設計 → 実装 → レビュー → PR の各工程を skill として持ち、それぞれを **sub-agent で独立コンテキスト実行**することで、ルール精読・diff・レビュー指摘・ブラウザログといった大量の中間情報が親のコンテキストを食い潰さないようにしてある。
 
-プロジェクト固有の値（リポジトリ名・ベースブランチ・lint/test コマンド・課題管理の ID 群）は **`.claude/devkit.json` の 1 ファイルに外出し**されており、skill 本体にはどこにも直書きされていない。
+開発ループに加えて、**リリース運用・課題管理連携・インフラ運用・多段配線の追加/廃止**まで、プロジェクト非依存の部分を抽出して収録している。
+
+プロジェクト固有の値（リポジトリ名・ベースブランチ・lint/test コマンド・課題管理の ID 群・インフラ構成）は **`.claude/devkit.json` の 1 ファイルに外出し**されており、skill 本体にはどこにも直書きされていない。
 
 ## 導入
 
@@ -21,40 +23,89 @@ Issue から PR までを自律ループで回す、**プロジェクト非依�
 
 `/devkit-init` は、リポジトリ名・既定ブランチ・lint/test コマンドを**先に推測してから**（`gh repo view` / `package.json` / `Makefile` / CI ワークフロー）確認を求め、`.claude/devkit.json` を生成する。あわせて検証スクリプトと rules テンプレを配置する。
 
+**全部入りを前提にしない。** 課題管理・インフラ・DB の設定は、使う skill があるときだけ埋めればよい。
+
+## 収録スキル
+
+### Tier A — 設定がほぼ不要（どのプロジェクトでも動く）
+
+| skill | 役割 |
+|---|---|
+| `commit-changes` | Conventional Commit（push はしない） |
+| `loop-until-pass` | 任意の検査を合格まで回す汎用ループ |
+| `audit-changes` | N 回レビュー → 一括修正 → 収束ループ |
+| `harvest` | 会話から知見を抽出して rules へ永続化 |
+| `genshijin` | 超圧縮コミュニケーションモード（**ハーネスとは独立**。他 skill と依存関係を持たないので、不要なら削除してよい） |
+
+### Tier B — Issue 起点の開発ループ
+
+| skill | 役割 |
+|---|---|
+| `implement-issue` | Issue → PR の統括（自走モードあり） |
+| `create-issue` | テンプレートに沿った Issue 起票 |
+| `define-requirements` / `design-implementation` | 要件（何を / なぜ）と設計（どう実装するか） |
+| `review-requirements` / `review-design` / `review-test-coverage` | 突合（**判定のみ・修正しない**） |
+| `fix-pr-review` | PR レビュー対応（reply / resolve まで） |
+| `verify-browser` | ブラウザ実機検証 |
+| `harden-and-verify-issue` | テスト整備 → 実機受け入れ → Status 前進の統括 |
+| `merge-wording-fix` | 文言修正のみマージまで自走（機械ゲート付き） |
+
+### Tier C — チーム運用 / リリース
+
+| skill | 役割 |
+|---|---|
+| `sync-release-status` | リリース PR から親 Issue を辿って Status を一括遷移 |
+| `release-progress-report` | 現イテレーションの Status 別集計 |
+| `daily-schedule` | 担当 Issue から本日のスケジュールを組んでカレンダーへ |
+| `sync-docs` | 実装を SoT とした rules のドリフト検出 |
+| `security-review` | リリース前のセキュリティ監査（全リポ横断 + データフロー） |
+| `pull-all` / `onboarding` | 全リポ最新化 / 新規参加メンバーのセットアップ |
+
+### Tier D — インフラ運用
+
+| skill | 役割 |
+|---|---|
+| `app-log-monitor` / `error-investigation` | ログ確認 / 障害の切り分け |
+| `app-rollback` / `maintenance-mode` | 切り戻し / メンテナンスモード |
+| `db-status` / `db-backup` / `kube-debug-db` | DB の状態・バックアップ・クラスタ経由の接続 |
+| `registry-cleanup` / `vulnerability-fix` | 未使用イメージ削除 / 検知済み CVE の依存更新 |
+| `local-init` / `local-destroy` / `env-sync` | ローカル環境の構築・破棄・環境ファイル同期 |
+| `assist-migration` / `schema-sync` | スキーマ変更 / 他リポへの横展開 |
+
+### Tier E — 運用パターンの骨格
+
+プロジェクト固有の手順書を書くときの**型**。実際に触るファイルは各プロジェクトの rules が SoT。
+
+| skill | 役割 |
+|---|---|
+| `multi-surface-change` | 1 つの概念を複数レイヤに跨って追加 / 廃止する |
+| `pricing-change` | 単価・料金の改定（反映タイミングと過去分の扱い） |
+| `data-subject-operation` | 個別データの削除・エクスポート |
+| `tls-certificate-recovery` | TLS 証明書の期限切れ・発行失敗の復旧 |
+
 ## 構成
 
 ```
 claude-devkit/
-├── .claude-plugin/
-│   ├── marketplace.json
-│   └── plugin.json
-├── skills/
-│   ├── devkit-init/              導入・設定生成
-│   ├── implement-issue/          Issue → PR の統括（自走モードあり）
-│   ├── define-requirements/      要件定義（何を / なぜ）
-│   ├── design-implementation/    実装設計（どう実装するか）
-│   ├── review-requirements/      要件品質の突合（判定のみ）
-│   ├── review-design/            設計の突合（判定のみ）
-│   ├── review-test-coverage/     テスト網羅の突合（判定のみ）
-│   ├── audit-changes/            N 回レビュー → 一括修正 → 収束ループ
-│   ├── fix-pr-review/            PR レビュー対応（reply / resolve まで）
-│   ├── verify-browser/           ブラウザ実機検証
-│   ├── loop-until-pass/          任意の検査を合格まで回す汎用ループ
-│   ├── commit-changes/           Conventional Commit（push はしない）
-│   └── harvest/                  会話から知見を抽出して rules へ永続化
-├── agents/                       上記 8 skill の独立コンテキスト実行ラッパ
+├── .claude-plugin/            marketplace.json / plugin.json
+├── skills/                    42 skill（上表）
+├── agents/                    独立コンテキスト実行ラッパ（9 件）
+├── docs/
+│   └── evidence.md            検証・レビューの証跡の残し方（共通規約）
 ├── templates/
-│   ├── devkit.json               設定テンプレ（最小）
-│   ├── devkit.full-example.json  設定テンプレ（GitHub Project 連携あり）
-│   ├── settings.json             hooks 雛形
-│   └── rules/                    rules テンプレ + 運用基準（P1〜P5 / A1〜A4）
+│   ├── devkit.json            設定テンプレ（最小）
+│   ├── devkit.full-example.json  設定テンプレ（全部入り）
+│   ├── settings.json          hooks 雛形
+│   └── rules/                 rules テンプレ + 運用基準（P1〜P5 / A1〜A4）
 └── tools/
-    ├── config.sh                 devkit.json を shell 変数として export
-    ├── rules-size-check.sh       rules の肥大化と知見の消失を機械検証
-    └── validate.sh               devkit 自身の健全性検証（編集したら必ず実行）
+    ├── config.sh              devkit.json を shell 変数として export
+    ├── rules-size-check.sh    rules の肥大化と知見の消失を機械検証（検証 1〜5）
+    ├── project-items-fetch.sh GitHub Project の全 item を安価に取得
+    ├── wording-fix-gate/      文言修正マージゲート（分類器 + PreToolUse hook）
+    └── validate.sh            devkit 自身の健全性検証（編集したら必ず実行）
 ```
 
-`config.sh` と `rules-size-check.sh` は `/devkit-init` が対象プロジェクトの `.claude/devkit/` へ**コピー**する（参照ではなくコピーなので、プラグインを更新してもプロジェクト側は動き続ける）。
+`tools/` は `/devkit-init` が対象プロジェクトの `.claude/devkit/` へ**コピー**する（参照ではなくコピーなので、プラグインを更新してもプロジェクト側は動き続ける）。
 
 ## 設計の柱
 
@@ -73,15 +124,27 @@ claude-devkit/
 
 `review-*` skill は**修正しない**。判定結果を `json findings` 形式で返し、修正は `audit-changes` / `fix-pr-review` が行う。ラウンド中に直すと次のラウンドの視点が変わるため、検出に専念させる。
 
-### 3. 知見は rules に貯め、肥大化は機械で止める
+### 3. 知見は rules に貯め、肥大化はラチェットで止める
 
-`/harvest` が会話から知見を抽出して `.claude/rules/` に追記し、`rules-size-check.sh` が「合計サイズ / 見出しの保全 / 知見エントリの保存則 / リンク解決」を base 比較で検証する。
+`/harvest` が会話から知見を抽出して `.claude/rules/` に追記し、`rules-size-check.sh` が 5 つの検証をかける:
 
-**「増やす」だけでなく「移す・統合する」までが 1 セット。** 何を常駐させ何を `docs/` へ移すかの判定基準（常駐必須クラス P1〜P5 / アーカイブ対象クラス A1〜A4）は `templates/rules/README.md` が SoT。
+| 検証 | 内容 |
+|---|---|
+| 1 サイズ | 合計 / ファイル単体の上限 |
+| 2 見出し保全 | base にあった見出しが消えていないか（移動は許容） |
+| 3 エントリ保存則 | 知見の総数が減っていないか |
+| 4 リンク解決 | 相対リンクの実在 |
+| **5 釣り合わせ** | **増やした分だけ退避したか（ラチェット）** |
+
+**「増やす」だけでなく「移す・統合する」までが 1 セット。** 検証 5 は、rules を 2 KB 超増やしたのに退避が同量に満たない変更を FAIL にする（本当に出せるものが無いときだけ `--allow-growth` で宣言する）。何を常駐させ何を `docs/` へ移すかの判定基準（P1〜P5 / A1〜A4）は `templates/rules/README.md` が SoT。
 
 ### 4. プロジェクト固有値は 1 箇所に集約する
 
-skill 本体にリポ名・Project ID・lint コマンドを直書きしない。差し替え点は `.claude/devkit.json` だけ。
+skill 本体にリポ名・Project ID・lint コマンド・クラスタ名を直書きしない。差し替え点は `.claude/devkit.json` だけ。
+
+### 5. 「取得できなかった」と「0 件だった」を区別する
+
+CI の polling・ログ取得・レビュー結果・走査ベースの検証すべてに効く原則。空文字や取得失敗を「問題なし」と読む実装をしない。
 
 ## 課題管理の対応レベル
 
@@ -89,9 +152,9 @@ skill 本体にリポ名・Project ID・lint コマンドを直書きしない�
 
 | type | できること |
 |---|---|
-| `github-project` | Status 遷移・Size / 工数の書き込みまで自動化 |
+| `github-project` | Status 遷移・Size / 工数の書き込み・一括遷移・進捗集計まで自動化 |
 | `issues-only` | Issue へのコメント投稿まで。Status 遷移工程は自動でスキップ |
-| `none` | Issue 起点の skill は使えない。`commit-changes` / `loop-until-pass` / `audit-changes` / `harvest` のみ有効 |
+| `none` | Issue 起点の skill は使えない。Tier A のみ有効 |
 
 ## devkit 自体を編集したとき
 
@@ -99,14 +162,25 @@ skill 本体にリポ名・Project ID・lint コマンドを直書きしない�
 bash tools/validate.sh
 ```
 
-固有語の残留 / JSON / frontmatter / 相対リンク / シェル構文 / 設定読み込みの形 を検証する。**検証を足したら、その検証自身を故意破壊で確かめること**（本物を 1 件だけ壊して FAIL を確認 → 復元して PASS を確認）。
+JSON / frontmatter / 相対リンク / **シェル構文とマルチバイト隣接** / 設定読み込みの形 / **tools 参照の実在** / **設定キー・変数の実在** を検証する。
+
+**`$VAR` の直後にマルチバイト文字を置かない**（`${VAR}` のブレースを使う）。bash はそれを変数名の一部として読み、`set -u` の下で unbound variable になって**意図した exit code もエラーメッセージも失われる**（実際このバグが 1 件あり、導入シミュレーションで初めて露見した）。
+
+🔴 **検証を足したら、その検証自身を故意破壊で確かめること**（本物を 1 件だけ壊して FAIL を確認 → 復元して PASS を確認）。「PASS しているから正しい」と「そもそも見ていない」は区別が付かない。
+
+🔴 **故意破壊の復元は `git checkout --` に頼らない。** 対象が untracked（新規ファイル）だと**無言でスキップされ、破壊が残る**。復元後は必ず `git status --short` と実ファイルの末尾を目視する。
 
 ## 前提
 
 - `git`
 - `gh`（GitHub 連携を使う場合）。Project への書き込みには `project` scope が必要
 - `jq`
+- `python3`（`validate.sh` / `rules-size-check.sh` / `wording-fix-gate`）
 
 ## ライセンス / 由来
 
-実運用中のマルチサービス開発ハーネスから、プロジェクト非依存の部分を抽出して汎用化したもの。抽出元の固有情報（組織名・リポジトリ名・ドメイン用語）は含まない。
+MIT License（[LICENSE](./LICENSE)）。
+
+実運用中のマルチサービス開発ハーネスから、プロジェクト非依存の部分を抽出して汎用化したもの。抽出元の固有情報（組織名・リポジトリ名・ドメイン用語・実 ID・個人名）は含まない。
+
+**抽出元から追加で持ち込むときの注意**: 固有語は「リポ名」ではなく **設定のサンプル値**（ディレクトリ名・レジストリ名・命名パターン・Status 表示名）として紛れ込む。今回の抽出でも、リポ名を除いた後にこの形で 3 件残っていた。
