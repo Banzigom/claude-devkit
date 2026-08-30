@@ -13,7 +13,7 @@ allowed-tools: Bash(bash *), Bash(git *), Bash(jq *), AskUserQuestion
 ### 1. 対象の列挙
 
 ```bash
-DEVKIT_ENV=$(bash .claude/devkit/config.sh) || exit 1
+DEVKIT_ENV=$(bash "$(git rev-parse --show-toplevel)/.claude/devkit/config.sh") || exit 1
 eval "$DEVKIT_ENV"
 
 # name<TAB>path<TAB>repo<TAB>baseBranch（未設定なら自リポの baseBranch）

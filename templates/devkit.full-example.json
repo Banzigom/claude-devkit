@@ -87,6 +87,13 @@
     "maxFileBytes": 20480
   },
 
+  "wordingGate": {
+    "_note": "/merge-wording-fix の文言修正ゲート。閾値を上げるほど自動マージの範囲が広がる",
+    "maxFiles": 5,
+    "maxChangedLines": 80,
+    "extraDeny": []
+  },
+
   "review": {
     "requirementsCycles": 3,
     "designCycles": 3,

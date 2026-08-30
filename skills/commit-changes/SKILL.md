@@ -16,7 +16,7 @@ Conventional Commit メッセージを組み立て、先頭候補を採用して
 ## 設定の読み込み
 
 ```bash
-DEVKIT_ENV=$(bash .claude/devkit/config.sh) || exit 1
+DEVKIT_ENV=$(bash "$(git rev-parse --show-toplevel)/.claude/devkit/config.sh") || exit 1
 eval "$DEVKIT_ENV"
 ```
 

@@ -15,7 +15,7 @@ GitHub Project から**操作ユーザー本人**の対応すべき Issue を拾
 ## 前提
 
 ```bash
-DEVKIT_ENV=$(bash .claude/devkit/config.sh) || exit 1
+DEVKIT_ENV=$(bash "$(git rev-parse --show-toplevel)/.claude/devkit/config.sh") || exit 1
 eval "$DEVKIT_ENV"
 [ "$DEVKIT_TRACKER" = "github-project" ] || { echo "tracker.type が github-project でないため利用不可"; exit 0; }
 ```
@@ -56,7 +56,7 @@ eval "$DEVKIT_ENV"
 ```bash
 LOGIN=$(gh api user --jq .login)
 TODAY=$(TZ="$DEVKIT_SCHED_TZ" date +%Y-%m-%d)
-bash .claude/devkit/project-items-fetch.sh /tmp/ds_items.json   # 毎回上書き（約 10 pt）
+bash "$DEVKIT_ROOT/.claude/devkit/project-items-fetch.sh" /tmp/ds_items.json   # 毎回上書き（約 10 pt）
 ```
 
 イテレーションは items の `iteration.startDate` から判定する（today 以下で最新 = current、today より後で最小 = next）:

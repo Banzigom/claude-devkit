@@ -2,7 +2,7 @@
 name: app-rollback
 description: アプリケーション（イメージ）と DB を以前の状態へ切り戻す。範囲確認 → 実行 → 動作確認までをゲート付きで進める。「切り戻し」「ロールバック」「rollback」「戻して」と言われた時に使用してください。
 argument-hint: '[--app-only | --with-db]'
-allowed-tools: Bash(bash *), Bash(git *), Bash(kubectl get:*), Bash(kubectl logs:*), Bash(kubectl set image:*), Bash(kubectl rollout:*), Bash(gcloud *), Bash(aws *), Bash(curl *), Bash(jq *), Read, AskUserQuestion
+allowed-tools: Bash(bash *), Bash(git *), Bash(kubectl get:*), Bash(kubectl logs:*), Bash(kubectl set image:*), Bash(kubectl rollout:*), Bash(curl *), Bash(jq *), Read, AskUserQuestion
 ---
 
 # app-rollback — アプリ / DB の切り戻し
@@ -20,7 +20,7 @@ allowed-tools: Bash(bash *), Bash(git *), Bash(kubectl get:*), Bash(kubectl logs
 ### 1. 状況の確認
 
 ```bash
-DEVKIT_ENV=$(bash .claude/devkit/config.sh) || exit 1
+DEVKIT_ENV=$(bash "$(git rev-parse --show-toplevel)/.claude/devkit/config.sh") || exit 1
 eval "$DEVKIT_ENV"
 ```
 

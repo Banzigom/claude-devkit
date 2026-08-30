@@ -72,7 +72,7 @@ Phase 6  Status 遷移          → 受け入れ条件を満たせば前進
 ### Phase 0: 対象特定
 
 ```bash
-DEVKIT_ENV=$(bash .claude/devkit/config.sh) || exit 1
+DEVKIT_ENV=$(bash "$(git rev-parse --show-toplevel)/.claude/devkit/config.sh") || exit 1
 eval "$DEVKIT_ENV"
 gh issue view <N> --repo "$DEVKIT_REPO" --json title,body,comments,state,labels
 ```

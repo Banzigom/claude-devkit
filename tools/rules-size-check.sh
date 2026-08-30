@@ -233,7 +233,11 @@ echo "[4/5] 相対リンク解決"
 
 broken=0
 checked=0
-for f in $(find $(existing_dirs) -name '*.md' -type f | sort); do
+# `for f in $(find ...)` は空白入りパスで単語分割されて壊れる。
+# パイプで while に渡すとループがサブシェルに入り、broken / FAILED の加算が
+# **呼び出し元に残らない**（リンク切れを見つけても exit 0 で通る）。
+# プロセス置換でリダイレクトして、ループを現在のシェルに保つ。
+while IFS= read -r f; do
   dir=$(dirname "$f")
   # ](...) 形式のリンク先を抽出する。
   #   - コードフェンス内は書き方の例であって実リンクではないので除外
@@ -261,7 +265,7 @@ for f in $(find $(existing_dirs) -name '*.md' -type f | sort); do
   done <<EOF
 $links
 EOF
-done
+done < <(find $(existing_dirs) -name '*.md' -type f | sort)
 [ "$broken" -eq 0 ] && pass "相対リンク ${checked} 件すべて解決"
 
 # ------------------------------------------- 検証 5: 追記と退避の釣り合わせ
@@ -314,6 +318,12 @@ else
     pass "rules の増加が ${BALANCE_THRESHOLD} B 以下 (${rules_delta} B)"
   elif [ "$offload_delta" -ge "$rules_delta" ]; then
     pass "退避 ${offload_delta} B >= 追記 ${rules_delta} B"
+    # 判定は「退避先が増えたか」しか見ていないので、**何も移さず退避先に新規文書を
+    # 足しただけ**でも通る。rules が 1 B も減っていないならその可能性が高い。
+    # FAIL にはしない（純粋な新規知見 + 新規参考資料は正当）が、黙って通さない。
+    if [ "$rules_now" -ge "$rules_base" ]; then
+      warn "rules は 1 B も減っていない。退避ではなく新規追加で釣り合わせていないか確認する（原則は「消す」ではなく「移す」）"
+    fi
   elif [ "$ALLOW_GROWTH" -eq 1 ]; then
     warn "退避 ${offload_delta} B < 追記 ${rules_delta} B だが --allow-growth で許可された"
   else

@@ -14,7 +14,7 @@ allowed-tools: Bash(bash *), Bash(git *), Bash(gh *), Bash(make *), Bash(npx *),
 ## 前提
 
 ```bash
-DEVKIT_ENV=$(bash .claude/devkit/config.sh) || exit 1
+DEVKIT_ENV=$(bash "$(git rev-parse --show-toplevel)/.claude/devkit/config.sh") || exit 1
 eval "$DEVKIT_ENV"
 jq -r '.database.schemas[]? | [.name, .path] | @tsv' "$DEVKIT_CONFIG"
 jq -r '.siblingRepos[]? | [.name, .path, (.baseBranch // "")] | @tsv' "$DEVKIT_CONFIG"

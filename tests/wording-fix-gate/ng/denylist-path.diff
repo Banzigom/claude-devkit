@@ -1,0 +1,9 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 1111111..2222222 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -1,3 +1,3 @@
+ name: CI
+-# 毎日のビルドを回す
++# 毎日のビルドとテストを回す
+ on: [push]

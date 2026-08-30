@@ -2,7 +2,7 @@
 name: error-investigation
 description: 特定環境・特定テナントで発生した障害を、Pod 状態 → ログ → データ層の順に切り分けて原因を特定する。調査のみで修正はしない。「エラーが出ている」「障害調査」「動かない」「特定環境の調査」と言われた時に使用してください。
 argument-hint: '[環境] [症状]'
-allowed-tools: Bash(bash *), Bash(kubectl get:*), Bash(kubectl logs:*), Bash(kubectl describe:*), Bash(kubectl top:*), Bash(gcloud *), Bash(aws *), Bash(gh *), Bash(git *), Bash(jq *), Read, Glob, Grep, AskUserQuestion
+allowed-tools: Bash(bash *), Bash(kubectl get:*), Bash(kubectl logs:*), Bash(kubectl describe:*), Bash(kubectl top:*), Bash(gcloud logging read:*), Bash(aws logs:*), Bash(gh *), Bash(git *), Bash(jq *), Read, Glob, Grep, AskUserQuestion
 ---
 
 # error-investigation — 障害の切り分け
@@ -14,7 +14,7 @@ allowed-tools: Bash(bash *), Bash(kubectl get:*), Bash(kubectl logs:*), Bash(kub
 ### 1. 状況の確認
 
 ```bash
-DEVKIT_ENV=$(bash .claude/devkit/config.sh) || exit 1
+DEVKIT_ENV=$(bash "$(git rev-parse --show-toplevel)/.claude/devkit/config.sh") || exit 1
 eval "$DEVKIT_ENV"
 ```
 

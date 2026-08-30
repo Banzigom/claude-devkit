@@ -2,7 +2,7 @@
 name: tls-certificate-recovery
 description: TLS 証明書の期限切れ・発行失敗を切り分けて復旧する。証明書リソースの状態確認 → 発行者の状態確認 → 再発行 → 反映確認。「証明書エラー」「証明書期限切れ」「TLS エラー」「HTTPS が繋がらない」と言われた時に使用してください。
 argument-hint: '[対象ドメイン | 環境]'
-allowed-tools: Bash(bash *), Bash(kubectl get:*), Bash(kubectl describe:*), Bash(kubectl delete:*), Bash(kubectl apply:*), Bash(openssl *), Bash(curl *), Bash(dig *), Bash(gcloud *), Bash(jq *), Read, AskUserQuestion
+allowed-tools: Bash(bash *), Bash(kubectl get:*), Bash(kubectl describe:*), Bash(kubectl delete:*), Bash(kubectl apply:*), Bash(openssl *), Bash(curl *), Bash(dig *), Bash(jq *), Read, AskUserQuestion
 ---
 
 # tls-certificate-recovery — TLS 証明書の復旧

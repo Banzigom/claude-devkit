@@ -122,21 +122,31 @@ gh project list --owner <owner> --format json | jq '.projects[] | {number, id, t
 
 プラグイン同梱の `tools/` をプロジェクト内へコピーする。**プラグインを更新してもプロジェクト側は動き続ける**ようにするため、参照ではなくコピーで持たせる。
 
+プラグインの実体は `${CLAUDE_PLUGIN_ROOT}` にある。**パスを推測しないこと**（インストール形態によって場所が変わる）。
+
 ```bash
-mkdir -p .claude/devkit
-cp <plugin>/tools/config.sh              .claude/devkit/config.sh
-cp <plugin>/tools/rules-size-check.sh    .claude/devkit/rules-size-check.sh
-cp <plugin>/tools/project-items-fetch.sh .claude/devkit/project-items-fetch.sh   # tracker=github-project のみ
-cp -r <plugin>/tools/wording-fix-gate    .claude/devkit/wording-fix-gate         # /merge-wording-fix を使う場合のみ
-chmod +x .claude/devkit/*.sh
+PLUGIN="${CLAUDE_PLUGIN_ROOT:?プラグイン root が取れない。plugin 経由で起動されているか確認する}"
+ROOT=$(git rev-parse --show-toplevel)
+mkdir -p "$ROOT/.claude/devkit"
+cp "$PLUGIN/tools/config.sh"              "$ROOT/.claude/devkit/config.sh"
+cp "$PLUGIN/tools/rules-size-check.sh"    "$ROOT/.claude/devkit/rules-size-check.sh"
+cp "$PLUGIN/tools/project-items-fetch.sh" "$ROOT/.claude/devkit/project-items-fetch.sh"   # tracker=github-project のみ
+cp -r "$PLUGIN/tools/wording-fix-gate"    "$ROOT/.claude/devkit/wording-fix-gate"         # /merge-wording-fix を使う場合のみ
+chmod +x "$ROOT"/.claude/devkit/*.sh
+
+# 何をコピーしたかの版を刻む。これが無いと /devkit-update が
+# 「更新が要るのか」を判断できず、修正がプロジェクトへ永久に届かない。
+jq -r '.version' "$PLUGIN/.claude-plugin/plugin.json" > "$ROOT/.claude/devkit/VERSION"
 ```
 
 **条件付きのものは「使う場合のみ」コピーする。** 使わないスクリプトを置くと、次に読む人が「これは何のために動いているのか」を調べる羽目になる。
 
+🔴 **`.claude/devkit/VERSION` は必ず書く。** コピーで持たせる設計は「プラグイン更新の影響を受けない」代わりに「プラグイン側のバグ修正も届かない」という裏返しを持つ。版が刻まれていないと、届いていないことにすら気づけない。更新は [devkit-update](../devkit-update/SKILL.md) が行う。
+
 配置直後に**必ず動作確認する**（設定の書き間違いはここでしか捕まらない）:
 
 ```bash
-DEVKIT_ENV=$(bash .claude/devkit/config.sh) || echo "設定エラー"
+DEVKIT_ENV=$(bash "$(git rev-parse --show-toplevel)/.claude/devkit/config.sh") || echo "設定エラー"
 eval "$DEVKIT_ENV"; echo "repo=$DEVKIT_REPO base=$DEVKIT_BASE_BRANCH lint=$DEVKIT_CMD_LINT"
 ```
 
@@ -168,17 +178,18 @@ devkit-init 完了
 - 設定: .claude/devkit.json（repo=<...>, base=<...>, tracker=<...>）
 - 推測して埋めた値: lint=<...>（出所: .github/workflows/ci.yml）
 - 未設定のまま残した値: <キー名>（理由: <...>）
-- 配置: .claude/devkit/{config.sh,rules-size-check.sh}
+- 配置: .claude/devkit/{config.sh,rules-size-check.sh} + VERSION=<プラグインの版>
 - rules: <新規作成 N ファイル / 既存を尊重して skip>
 - 次にできること: /implement-issue <issue番号> または /commit-changes
 ```
 
 ## 合格基準
 
-- `bash .claude/devkit/config.sh` が exit 0 で `DEVKIT_REPO` を出力する
+- `bash "$(git rev-parse --show-toplevel)/.claude/devkit/config.sh"` が exit 0 で `DEVKIT_REPO` を出力する
 - `tracker.type` が `github-project` なら、`projectId` と `statusFieldId` が両方埋まっている（片方だけだと Status 遷移が実行時に失敗する）
-- `bash .claude/devkit/rules-size-check.sh` が exit 0 で終わる（rules を配置した場合）
-- `tracker.type` が `github-project` なら `bash .claude/devkit/project-items-fetch.sh /tmp/check.json` が exit 0 で item を取得する（**0 件で成功したら owner / number の設定違いを疑う**）
+- `.claude/devkit/VERSION` にプラグインの version が書かれている（`/devkit-update` の判断材料。無いと更新が届いているか分からない）
+- `bash "$DEVKIT_ROOT/.claude/devkit/rules-size-check.sh"` が exit 0 で終わる（rules を配置した場合）
+- `tracker.type` が `github-project` なら `bash "$DEVKIT_ROOT/.claude/devkit/project-items-fetch.sh" /tmp/check.json` が exit 0 で item を取得する（**0 件で成功したら owner / number の設定違いを疑う**）
 - 配置したスクリプトが**設定を実際に読めている**（`config.sh` の出力に `DEVKIT_REPO` が入っている）
 
 ## Notes

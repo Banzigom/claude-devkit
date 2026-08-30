@@ -12,7 +12,7 @@ allowed-tools: Bash(bash *), Bash(kubectl get:*), Bash(kubectl debug:*), Bash(ku
 ## 前提
 
 ```bash
-DEVKIT_ENV=$(bash .claude/devkit/config.sh) || exit 1
+DEVKIT_ENV=$(bash "$(git rev-parse --show-toplevel)/.claude/devkit/config.sh") || exit 1
 eval "$DEVKIT_ENV"
 kubectl config current-context     # 🔴 まず context。テナント / 環境を跨いだ切替で誤対象を見がち
 ```

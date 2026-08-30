@@ -12,7 +12,7 @@ allowed-tools: Bash(bash *), Bash(gh *), Bash(git *), Bash(ls *), Bash(jq *), Re
 **`.github/ISSUE_TEMPLATE/` の yml が source of truth。** Issue 本文はテンプレのセクション見出しと一字一句揃える（Issue Forms 経由で作られた既存 Issue と検索性・パース互換性を保つため）。
 
 ```bash
-DEVKIT_ENV=$(bash .claude/devkit/config.sh) || exit 1
+DEVKIT_ENV=$(bash "$(git rev-parse --show-toplevel)/.claude/devkit/config.sh") || exit 1
 eval "$DEVKIT_ENV"
 ls .github/ISSUE_TEMPLATE/ 2>/dev/null
 ```

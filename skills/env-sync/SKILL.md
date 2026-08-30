@@ -18,7 +18,7 @@ allowed-tools: Bash(bash *), Bash(git *), Bash(gh *), Bash(diff *), Bash(cp *), 
 ## 設定
 
 ```bash
-DEVKIT_ENV=$(bash .claude/devkit/config.sh) || exit 1
+DEVKIT_ENV=$(bash "$(git rev-parse --show-toplevel)/.claude/devkit/config.sh") || exit 1
 eval "$DEVKIT_ENV"
 ```
 

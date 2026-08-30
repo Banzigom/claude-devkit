@@ -2,7 +2,7 @@
 name: db-status
 description: マネージド DB インスタンスの状態・メトリクス・進行中オペレーションを確認する。「DB 状態確認」「DB メトリクス」「DB 接続数」「バックアップの進捗」と言われた時に使用してください。
 argument-hint: '[インスタンス名 | --all]'
-allowed-tools: Bash(bash *), Bash(gcloud *), Bash(aws *), Bash(az *), Bash(kubectl get:*), Bash(jq *), Read, AskUserQuestion
+allowed-tools: Bash(bash *), Bash(gcloud sql instances list:*), Bash(gcloud sql instances describe:*), Bash(aws rds describe-db-instances:*), Bash(az sql db show:*), Bash(kubectl get:*), Bash(jq *), Read, AskUserQuestion
 ---
 
 # db-status — DB インスタンスの状態確認
@@ -14,7 +14,7 @@ allowed-tools: Bash(bash *), Bash(gcloud *), Bash(aws *), Bash(az *), Bash(kubec
 ### 1. 対象の確認
 
 ```bash
-DEVKIT_ENV=$(bash .claude/devkit/config.sh) || exit 1
+DEVKIT_ENV=$(bash "$(git rev-parse --show-toplevel)/.claude/devkit/config.sh") || exit 1
 eval "$DEVKIT_ENV"
 ```
 

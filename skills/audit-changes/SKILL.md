@@ -49,7 +49,7 @@ allowed-tools: Skill, Agent, Bash(git *), Bash(gh *), Bash(make *), Bash(npm *),
 ### 1. 設定読み込みと変更ファイル確認
 
 ```bash
-DEVKIT_ENV=$(bash .claude/devkit/config.sh) || exit 1
+DEVKIT_ENV=$(bash "$(git rev-parse --show-toplevel)/.claude/devkit/config.sh") || exit 1
 eval "$DEVKIT_ENV"
 cd "$DEVKIT_ROOT"
 git diff "origin/${DEVKIT_BASE_BRANCH}...HEAD" --name-only

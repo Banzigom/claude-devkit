@@ -1,0 +1,9 @@
+diff --git a/locales/ja.json b/locales/ja.json
+index 1111111..2222222 100644
+--- a/locales/ja.json
++++ b/locales/ja.json
+@@ -1,3 +1,3 @@
+ {
+-  "title": "設定"
++  "title": "各種設定"
+ }

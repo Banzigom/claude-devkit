@@ -14,7 +14,7 @@ allowed-tools: Bash(bash *), Bash(git *), Bash(jq *), Bash(grep:*), Bash(find:*)
 ## 対象リポジトリ
 
 ```bash
-DEVKIT_ENV=$(bash .claude/devkit/config.sh) || exit 1
+DEVKIT_ENV=$(bash "$(git rev-parse --show-toplevel)/.claude/devkit/config.sh") || exit 1
 eval "$DEVKIT_ENV"
 
 { printf '%s\t%s\n' "$(basename "$DEVKIT_ROOT")" "$DEVKIT_ROOT"

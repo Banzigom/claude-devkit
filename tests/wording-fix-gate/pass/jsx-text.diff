@@ -1,0 +1,11 @@
+diff --git a/src/Hello.tsx b/src/Hello.tsx
+index 1111111..2222222 100644
+--- a/src/Hello.tsx
++++ b/src/Hello.tsx
+@@ -1,5 +1,5 @@
+ export function Hello() {
+   return (
+-    <p>ようこそ</p>
++    <p>いらっしゃいませ</p>
+   );
+ }

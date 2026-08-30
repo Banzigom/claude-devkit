@@ -29,7 +29,7 @@ allowed-tools: Bash(bash *), Bash(git *), Bash(gh *), Bash(python3 *), Bash(npx 
 ### 1. 事前確認
 
 ```bash
-DEVKIT_ENV=$(bash .claude/devkit/config.sh) || exit 1
+DEVKIT_ENV=$(bash "$(git rev-parse --show-toplevel)/.claude/devkit/config.sh") || exit 1
 eval "$DEVKIT_ENV"
 ```
 
@@ -52,7 +52,7 @@ git checkout -b "${DEVKIT_BRANCH_PREFIX}<issue>-<topic>" "origin/${DEVKIT_BASE_B
 文言のみ編集する。**コミット前に必ずローカルでゲートを通す**:
 
 ```bash
-git diff | python3 .claude/devkit/wording-fix-gate/gate.py --stdin
+git diff | python3 "$DEVKIT_ROOT/.claude/devkit/wording-fix-gate/gate.py" --stdin
 ```
 
 NG なら**この時点で自動マージ経路を断念する**（PR を作ってから気付くより手戻りが小さい）。理由を報告して通常フローへ。

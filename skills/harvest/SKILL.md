@@ -48,7 +48,7 @@ allowed-tools: Bash(git *), Bash(gh *), Bash(bash *), Bash(mkdir *), Bash(cp *),
 **最初に編集先の鮮度を確認する。** checkout は別作業のブランチに載っていることが常態で、そのまま Read / Edit すると**古い本文に対して重複チェックと追記をしてしまう**（既にマージ済みの他人の知見が見えず重複を作る / 是正したい既存行が古い版のまま）。
 
 ```bash
-DEVKIT_ENV=$(bash .claude/devkit/config.sh) || exit 1
+DEVKIT_ENV=$(bash "$(git rev-parse --show-toplevel)/.claude/devkit/config.sh") || exit 1
 eval "$DEVKIT_ENV"
 cd "$DEVKIT_ROOT"
 git branch --show-current
@@ -96,7 +96,7 @@ AskUserQuestion で知見を提示する（追記先ファイルも表示）。�
 `.claude/rules/` は**全ファイルが毎セッション自動読み込み**されるため、増え続けるとコンテキストを圧迫する。追記後に必ず検証する。
 
 ```bash
-bash .claude/devkit/rules-size-check.sh
+bash "$DEVKIT_ROOT/.claude/devkit/rules-size-check.sh"
 ```
 
 **行数でなくバイト数で判定する。** Learned は「1 エントリ = 1 長行」形式のため行数は実態を捉えない（110 行で 48 KB になりうる）。

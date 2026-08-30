@@ -14,7 +14,7 @@ allowed-tools: Bash(bash *), Bash(git *), Bash(jq *), Bash(grep:*), Bash(ls:*), 
 ## 前提: source が複数リポに分散しうる
 
 ```bash
-DEVKIT_ENV=$(bash .claude/devkit/config.sh) || exit 1
+DEVKIT_ENV=$(bash "$(git rev-parse --show-toplevel)/.claude/devkit/config.sh") || exit 1
 eval "$DEVKIT_ENV"
 cd "$DEVKIT_ROOT"
 

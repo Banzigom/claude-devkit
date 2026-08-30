@@ -25,6 +25,8 @@ Issue から PR までを自律ループで回す、**プロジェクト非依�
 
 **全部入りを前提にしない。** 課題管理・インフラ・DB の設定は、使う skill があるときだけ埋めればよい。
 
+プラグインを更新したら `/devkit-update` を実行する。`tools/` は**コピー**で持たせてあるため、プラグイン側の修正は自動では届かない。`.claude/devkit/VERSION` に刻んだ版と差分を突き合わせ、何が変わるかを見せてから取り込む（プロジェクト側の手入れは黙って上書きしない）。
+
 ## 収録スキル
 
 ### Tier A — 設定がほぼ不要（どのプロジェクトでも動く）
@@ -88,7 +90,8 @@ Issue から PR までを自律ループで回す、**プロジェクト非依�
 ```
 claude-devkit/
 ├── .claude-plugin/            marketplace.json / plugin.json
-├── skills/                    42 skill（上表）
+├── .github/workflows/         validate.sh を回す CI（故意破壊の再実行つき）
+├── skills/                    43 skill（上表 + devkit-init / devkit-update）
 ├── agents/                    独立コンテキスト実行ラッパ（9 件）
 ├── docs/
 │   └── evidence.md            検証・レビューの証跡の残し方（共通規約）
@@ -97,6 +100,8 @@ claude-devkit/
 │   ├── devkit.full-example.json  設定テンプレ（全部入り）
 │   ├── settings.json          hooks 雛形
 │   └── rules/                 rules テンプレ + 運用基準（P1〜P5 / A1〜A4）
+├── tests/
+│   └── wording-fix-gate/      分類器のゴールデン diff（通る / 落ちる / 設定で反転）
 └── tools/
     ├── config.sh              devkit.json を shell 変数として export
     ├── rules-size-check.sh    rules の肥大化と知見の消失を機械検証（検証 1〜5）
@@ -105,7 +110,7 @@ claude-devkit/
     └── validate.sh            devkit 自身の健全性検証（編集したら必ず実行）
 ```
 
-`tools/` は `/devkit-init` が対象プロジェクトの `.claude/devkit/` へ**コピー**する（参照ではなくコピーなので、プラグインを更新してもプロジェクト側は動き続ける）。
+`tools/` は `/devkit-init` が対象プロジェクトの `.claude/devkit/` へ**コピー**する（参照ではなくコピーなので、プラグインを更新してもプロジェクト側は動き続ける）。裏返しとして**プラグイン側のバグ修正も自動では届かない**ので、版を `.claude/devkit/VERSION` に刻み、`/devkit-update` で明示的に取り込む。
 
 ## 設計の柱
 
@@ -140,7 +145,13 @@ claude-devkit/
 
 ### 4. プロジェクト固有値は 1 箇所に集約する
 
-skill 本体にリポ名・Project ID・lint コマンド・クラスタ名を直書きしない。差し替え点は `.claude/devkit.json` だけ。
+skill 本体にリポ名・Project ID・lint コマンド・クラスタ名を直書きしない。差し替え点は `.claude/devkit.json` だけ。文言修正ゲートの閾値・denylist（`wordingGate`）も同様。
+
+### 4.1 本文の 🔴 は `allowed-tools` にも書く
+
+**「やってはいけない」を本文にだけ書いても機械層は守らない。** `Bash(gcloud *)` は `gcloud sql instances delete` まで無確認で通す。破壊的 CLI（gcloud / aws / az / docker / kubectl / terraform / helm / psql / mysql）は**動詞まで絞る**か、許可リストに載せずに都度承認へ倒す。`validate.sh` の検証 2 が丸ごと許可を FAIL にする。
+
+プロジェクト固有の CLI 許可は、devkit ではなくそのプロジェクトの `.claude/settings.json` に、必要な接頭辞だけ足す。
 
 ### 5. 「取得できなかった」と「0 件だった」を区別する
 
@@ -162,11 +173,20 @@ CI の polling・ログ取得・レビュー結果・走査ベースの検証す
 bash tools/validate.sh
 ```
 
-JSON / frontmatter / 相対リンク / **シェル構文とマルチバイト隣接** / 設定読み込みの形 / **tools 参照の実在** / **設定キー・変数の実在** を検証する。
+JSON とバージョン整合 / frontmatter（agent の `model` 必須・破壊的 CLI の丸ごと許可禁止）/ 相対リンク / **シェル構文とマルチバイト隣接** / **Python 構文と文言ゲートのゴールデンテスト** / 設定読み込みの形（exit code・cwd 非依存）/ **tools 参照の実在** / **設定キー・変数・既定値の整合** の 8 項目を検証する。
+
+CI（`.github/workflows/validate.yml`）が push / PR ごとに同じものを回し、**さらに故意破壊を 1 件仕込んで FAIL することまで確認する**。「編集したら必ず実行する」を人の記憶に預けた結果、下記のバグが残っていた。
 
 **`$VAR` の直後にマルチバイト文字を置かない**（`${VAR}` のブレースを使う）。bash はそれを変数名の一部として読み、`set -u` の下で unbound variable になって**意図した exit code もエラーメッセージも失われる**（実際このバグが 1 件あり、導入シミュレーションで初めて露見した）。
 
 🔴 **検証を足したら、その検証自身を故意破壊で確かめること**（本物を 1 件だけ壊して FAIL を確認 → 復元して PASS を確認）。「PASS しているから正しい」と「そもそも見ていない」は区別が付かない。
+
+🔴 **確かめるのは「❌ が出たか」ではなく exit code。** 検知はできているのに終了ステータスへ伝わらない壊れ方が最も見つかりにくい。実際に 2 件あった:
+
+- `validate.sh` のマルチバイト検査が `sh_ng=1` だけ立てて `FAILED` に伝えず、**❌ を表示しながら `validate: PASS` / exit 0**
+- `rules-size-check.sh` のリンク検査が `find ... | while read` でループごとサブシェルに入り、**リンク切れを表示した直後に「✅ 0 件すべて解決」と言って exit 0**
+
+前者は集約変数へ伝える、後者は `while ... done < <(...)` にする。**故意破壊のたびに `echo $?` まで見ること。**
 
 🔴 **故意破壊の復元は `git checkout --` に頼らない。** 対象が untracked（新規ファイル）だと**無言でスキップされ、破壊が残る**。復元後は必ず `git status --short` と実ファイルの末尾を目視する。
 

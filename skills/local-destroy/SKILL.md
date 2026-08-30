@@ -2,7 +2,7 @@
 name: local-destroy
 description: ローカル開発環境を破棄する。コンテナのみ削除か、データボリュームまで含む完全クリーンかを選ぶ。「環境破棄」「destroy」「ローカル環境を消す」「クリーンアップ」と言われた時に使用してください。
 argument-hint: '[--with-volumes]'
-allowed-tools: Bash(bash *), Bash(docker *), Bash(mise *), Bash(make *), Bash(npm *), Bash(lsof *), Bash(jq *), Read, AskUserQuestion, Bash(git *)
+allowed-tools: Bash(bash *), Bash(docker compose:*), Bash(docker ps:*), Bash(docker volume ls:*), Bash(mise *), Bash(make *), Bash(npm *), Bash(lsof *), Bash(jq *), Read, AskUserQuestion, Bash(git status:*), Bash(git log:*), Bash(git rev-parse:*)
 ---
 
 # local-destroy — ローカル環境の破棄
@@ -12,6 +12,7 @@ allowed-tools: Bash(bash *), Bash(docker *), Bash(mise *), Bash(make *), Bash(np
 - 🔴 **破棄レベルをユーザーに確認してから実行する**
 - 🔴 **データボリュームの削除は明示的に確認を取る**（不可逆）
 - 🔴 **リポジトリ内のファイルを一切変更しない。** `git restore` / `git checkout` / `git stash` / ファイル編集はすべて禁止。**エラーが出てもファイルに手を加えず、状況を報告してユーザーの指示を仰ぐ**（他セッションの作業中変更を巻き込む事故になる）
+- 🔴 **`allowed-tools` の git は `status` / `log` / `rev-parse` に絞ってある。広げないこと。** 上の禁止を本文だけに書いても機械層は守らない（実際 `Bash(git *)` を許可したまま「git restore 禁止」と書いていた）
 
 ## 手順
 

@@ -1,0 +1,47 @@
+name: validate
+
+# devkit 自身の健全性検証。README は「編集したら必ず validate.sh を実行する」と
+# 書いているが、人の記憶に頼った結果、検証 4 の FAIL が FAILED に伝わらないバグが
+# 残っていた。同じことを繰り返さないよう CI で機械的に回す。
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 前提ツールの確認
+        run: |
+          set -euo pipefail
+          for c in jq python3 bash git; do
+            command -v "$c" >/dev/null || { echo "::error::$c が無い"; exit 1; }
+          done
+          jq --version && python3 --version
+
+      - name: validate.sh
+        run: bash tools/validate.sh
+
+      # 「PASS しているから正しい」と「そもそも見ていない」は区別が付かない。
+      # 検証自身が生きていることを、故意破壊 1 件で毎回確かめる。
+      - name: 検証自身の検証（故意破壊 → FAIL → 復元 → PASS）
+        run: |
+          set -euo pipefail
+          cp tools/config.sh /tmp/config.sh.bak
+          printf 'echo "$CFGの値"\n' >> tools/config.sh
+          if bash tools/validate.sh >/tmp/broken.log 2>&1; then
+            echo "::error::故意破壊しても validate が PASS した（検証が死んでいる）"
+            cat /tmp/broken.log
+            cp /tmp/config.sh.bak tools/config.sh
+            exit 1
+          fi
+          grep -q 'マルチバイト' /tmp/broken.log || {
+            echo "::error::FAIL はしたが期待した理由ではない"; cat /tmp/broken.log; exit 1; }
+          # 🔴 復元は git checkout に頼らない（untracked だと無言でスキップされる）
+          cp /tmp/config.sh.bak tools/config.sh
+          bash tools/validate.sh
+          git diff --exit-code
