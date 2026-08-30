@@ -2,7 +2,7 @@
 name: app-log-monitor
 description: 稼働中アプリケーションのログを確認・監視する。対象環境とサービスを先に確認し、エラー抽出・Pod 状態・リソース使用率まで見て切り分ける。「ログ確認」「ログ監視」「エラーログ」「Pod のログ見て」と言われた時に使用してください。
 argument-hint: '[環境] [サービス名]'
-allowed-tools: Bash(bash *), Bash(kubectl get:*), Bash(kubectl logs:*), Bash(kubectl describe:*), Bash(kubectl top:*), Bash(docker *), Bash(gcloud *), Bash(aws *), Bash(jq *), Read, AskUserQuestion
+allowed-tools: Bash(bash *), Bash(kubectl get:*), Bash(kubectl logs:*), Bash(kubectl describe:*), Bash(kubectl top:*), Bash(docker ps:*), Bash(docker logs:*), Bash(docker compose logs:*), Bash(gcloud logging read:*), Bash(aws logs:*), Bash(jq *), Read, AskUserQuestion
 ---
 
 # app-log-monitor — 稼働ログの確認・監視
@@ -17,7 +17,7 @@ allowed-tools: Bash(bash *), Bash(kubectl get:*), Bash(kubectl logs:*), Bash(kub
 ### 1. 対象の確認
 
 ```bash
-DEVKIT_ENV=$(bash .claude/devkit/config.sh) || exit 1
+DEVKIT_ENV=$(bash "$(git rev-parse --show-toplevel)/.claude/devkit/config.sh") || exit 1
 eval "$DEVKIT_ENV"
 jq -r '.infra | {platform, environments, services, namespacePattern, clusterPattern}' "$DEVKIT_CONFIG"
 ```

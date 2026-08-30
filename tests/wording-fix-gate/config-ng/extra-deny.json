@@ -1,0 +1,6 @@
+{
+  "repo": "OWNER/REPO",
+  "wordingGate": {
+    "extraDeny": ["^config/secrets/"]
+  }
+}

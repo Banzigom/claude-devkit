@@ -2,7 +2,7 @@
 name: db-backup
 description: 対象 DB のバックアップを取得し、復元に必要な ID を記録する。「DB バックアップ」「バックアップ取得」と言われた時に使用してください。
 argument-hint: '[対象 | --all]'
-allowed-tools: Bash(bash *), Bash(gcloud *), Bash(aws *), Bash(az *), Bash(jq *), Read, AskUserQuestion
+allowed-tools: Bash(bash *), Bash(gcloud sql backups list:*), Bash(aws rds describe-db-snapshots:*), Bash(az sql db list:*), Bash(jq *), Read, AskUserQuestion
 ---
 
 # db-backup — バックアップ取得
@@ -17,7 +17,7 @@ allowed-tools: Bash(bash *), Bash(gcloud *), Bash(aws *), Bash(az *), Bash(jq *)
 ### 0. 認証の確認
 
 ```bash
-DEVKIT_ENV=$(bash .claude/devkit/config.sh) || exit 1
+DEVKIT_ENV=$(bash "$(git rev-parse --show-toplevel)/.claude/devkit/config.sh") || exit 1
 eval "$DEVKIT_ENV"
 ```
 

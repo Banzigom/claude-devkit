@@ -14,19 +14,19 @@ GitHub Project の**現在イテレーション**に属する Issue を Status �
 ## 実行上の重要な注意（必読）
 
 - 🔴 **Bash ツールは呼び出しごとに新しいシェルになり、変数は次の呼び出しへ引き継がれない。** イテレーション判定 → 抽出 → 集計のように**変数を跨ぐ一連の処理は必ず 1 回の Bash 呼び出し内で完結させる。** 分割すると変数が空になり、**誤ったフィルタ結果が出ても気付きにくい**（別イテレーション分を拾う等）
-- 🔴 **全件取得は `bash .claude/devkit/project-items-fetch.sh`（約 10 pt）を使う。** `gh project item-list --limit N` は同じ取得に item 数ぶんのコストがかかる。カーソルページングなので `--limit` の動的算出も不要で、取りこぼしが原理的に起きない
+- 🔴 **全件取得は `bash "$DEVKIT_ROOT/.claude/devkit/project-items-fetch.sh"`（約 10 pt）を使う。** `gh project item-list --limit N` は同じ取得に item 数ぶんのコストがかかる。カーソルページングなので `--limit` の動的算出も不要で、取りこぼしが原理的に起きない
 
 ## 手順
 
 ### 1. 対象イテレーションの決定 + 取得 + 抽出（単一 Bash 呼び出し）
 
 ```bash
-DEVKIT_ENV=$(bash .claude/devkit/config.sh) || exit 1
+DEVKIT_ENV=$(bash "$(git rev-parse --show-toplevel)/.claude/devkit/config.sh") || exit 1
 eval "$DEVKIT_ENV"
 [ "$DEVKIT_TRACKER" = "github-project" ] || { echo "tracker.type が github-project でないため利用不可"; exit 0; }
 
 TODAY=$(TZ="$DEVKIT_SCHED_TZ" date +%Y-%m-%d)
-bash .claude/devkit/project-items-fetch.sh /tmp/rpr_items.json    # 毎回 fresh
+bash "$DEVKIT_ROOT/.claude/devkit/project-items-fetch.sh" /tmp/rpr_items.json    # 毎回 fresh
 
 CUR="${1:-$(jq -r --arg t "$TODAY" '[.items[].iteration//empty]|unique_by(.title)
   |map(select(.startDate<=$t))|sort_by(.startDate)|last|.title//"-"' /tmp/rpr_items.json)}"

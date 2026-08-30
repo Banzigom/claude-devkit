@@ -2,7 +2,7 @@
 name: registry-cleanup
 description: コンテナレジストリの古い未使用イメージを、クラスタで使用中のものを保護しながら削除する。「レジストリ掃除」「イメージ掃除」「古いイメージ削除」「registry-cleanup」と言われた時に使用してください。
 argument-hint: '[cutoff日付 YYYY-MM-DD]'
-allowed-tools: Bash(bash *), Bash(kubectl get:*), Bash(gcloud *), Bash(aws *), Bash(az *), Bash(jq *), Bash(gh *), Read, AskUserQuestion
+allowed-tools: Bash(bash *), Bash(kubectl get:*), Bash(gcloud artifacts docker images list:*), Bash(aws ecr describe-images:*), Bash(az acr repository show-tags:*), Bash(jq *), Bash(gh *), Read, AskUserQuestion
 ---
 
 # registry-cleanup — 未使用イメージの削除
@@ -17,7 +17,7 @@ allowed-tools: Bash(bash *), Bash(kubectl get:*), Bash(gcloud *), Bash(aws *), B
 ## Phase 0: 前提確認
 
 ```bash
-DEVKIT_ENV=$(bash .claude/devkit/config.sh) || exit 1
+DEVKIT_ENV=$(bash "$(git rev-parse --show-toplevel)/.claude/devkit/config.sh") || exit 1
 eval "$DEVKIT_ENV"
 [ -n "$DEVKIT_INFRA_REGISTRY" ] || { echo "infra.registry が未設定"; exit 1; }
 ```

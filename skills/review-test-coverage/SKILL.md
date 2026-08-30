@@ -35,7 +35,7 @@ allowed-tools: Bash(gh *), Bash(git *), Bash(grep *), Bash(find *), Bash(wc *), 
 ### 1. ルール群を Read
 
 ```bash
-DEVKIT_ENV=$(bash .claude/devkit/config.sh) || exit 1
+DEVKIT_ENV=$(bash "$(git rev-parse --show-toplevel)/.claude/devkit/config.sh") || exit 1
 eval "$DEVKIT_ENV"
 cd "$DEVKIT_ROOT"
 ls "$DEVKIT_RULES_DIR"/*.md

@@ -24,7 +24,7 @@ Claude の Bash 呼び出し
 
 すべて満たすこと:
 
-- 変更ファイル数 ≤ 5 / 変更行数（+/- 合計）≤ 80
+- 変更ファイル数 ≤ `wordingGate.maxFiles`（既定 5）/ 変更行数（+/- 合計）≤ `wordingGate.maxChangedLines`（既定 80）
 - 新規追加・削除・rename・バイナリ変更を含まない
 - denylist パスを含まない（既定）: `.github/` / `.claude/` / `tools/` / migrations / `schema.prisma` / `package.json` / `tsconfig*.json` / lock / Dockerfile / `k8s/` / `.env*` / `env.mjs` / `.tf` / Makefile / `.sql` / `.yml` `.yaml` / `.sh` / `.mise*.toml`
 - ドキュメント（`.md` / `.mdx` / `.txt`）: 内容自由
@@ -35,24 +35,38 @@ Claude の Bash 呼び出し
 
 判定不能・想定外は**すべて不合格**（fail-closed）。
 
-### プロジェクト固有の denylist を足す
+### 閾値・denylist の差し替え
 
-「文字列変更が挙動変更になり得る領域」はプロジェクトごとに違う。環境変数で追加する:
+「文字列変更が挙動変更になり得る領域」も、どこまでを自動マージに委ねるかも、プロジェクトごとに違う。**差し替え点は `.claude/devkit.json` の 1 箇所**（柱4）:
+
+```json
+{
+  "wordingGate": {
+    "maxFiles": 5,
+    "maxChangedLines": 80,
+    "extraDeny": ["^config/secrets/", "(^|/)tenant_settings\\.py$"]
+  }
+}
+```
+
+🔴 **設定ファイルが壊れていたら既定値へ落ちずに不合格にする。** denylist を足したつもりのプロジェクトが、JSON の書き損じだけで素通しになるのが最悪の壊れ方なので、判定不能は常に fail-closed に倒す。
+
+環境変数でも足せる（`:` 区切りの正規表現。設定と併用すると両方効く）:
 
 ```bash
 export WORDING_GATE_EXTRA_DENY='^config/secrets/:(^|/)tenant_settings\.py$'
 ```
 
-`:` 区切りの正規表現。hook から使うなら `.claude/settings.json` の hook コマンド側で設定する。
+hook から使うなら `.claude/settings.json` の hook コマンド側で設定する。
 
 ## 使い方
 
 ```bash
 # ローカル diff の事前チェック（PR 作成前）
-git diff "origin/<base>...HEAD" | python3 .claude/devkit/wording-fix-gate/gate.py --stdin
+git diff "origin/<base>...HEAD" | python3 "$(git rev-parse --show-toplevel)/.claude/devkit/wording-fix-gate/gate.py" --stdin
 
 # PR 単位の判定
-python3 .claude/devkit/wording-fix-gate/gate.py --pr 550 --repo owner/repo
+python3 "$(git rev-parse --show-toplevel)/.claude/devkit/wording-fix-gate/gate.py" --pr 550 --repo owner/repo
 ```
 
 ## hook の登録
@@ -80,7 +94,7 @@ python3 .claude/devkit/wording-fix-gate/gate.py --pr 550 --repo owner/repo
 
 - **fail-safe 優先**: 複数行に跨る JSX テキスト・テンプレートリテラルの文言変更、英単語 1 語のラベル変更（空白なしの純 ASCII）などは、文言修正でもブロックされうる → ユーザー手動マージへ
   - 🔴 **複数行 JSX は「1 行に詰めてマスクさせる」回避が成立しない。** `JSX_TEXT_RE` は `>text<` を**同一行**でしか拾わないため、フォーマッタが折り返した本文は `>` も `<` も無い素のテキスト行になり、マスクされず行全体が構造比較される。1 行にまとめても**フォーマッタが再び折り返す**ので NG のまま。**回避を試みず手動マージへ切り替える**（文字列リテラル化や定数への切り出しは行構造が変わるためやはり NG で、かつ文言修正の範囲を超える）
-- コード内の文字列が挙動を持つケース（SQL 文・プロンプト等の空白入り文字列）は「文言らしい」と判定されうる。**上限 5 ファイル / 80 行・CI green 必須・PR のレビュー可視性が残りの防衛線**
+- コード内の文字列が挙動を持つケース（SQL 文・プロンプト等の空白入り文字列）は「文言らしい」と判定されうる。**上限（既定 5 ファイル / 80 行）・CI green 必須・PR のレビュー可視性が残りの防衛線**
 - `.json`（i18n の翻訳ファイル含む）は一律不合格。緩和するなら「値のみ変更 + key 不変」の専用正規化を追加する
 - hook はシェル経由の**独自マージスクリプト**を検知しない。そうした経路があるプロジェクトでは別途ブロックを用意する
 - 🔴 **検知は「行頭・`;` `&` `|` の後」に現れたコマンドを拾うため、ドキュメントやヒアドキュメント本文に例として書いたコマンド文字列にも反応する。** ゲートの説明を書くときは、例示コマンドをインラインコード内に置くか行頭に来ないようにする（本 README がまさにそれで一度ブロックされた）
@@ -88,9 +102,16 @@ python3 .claude/devkit/wording-fix-gate/gate.py --pr 550 --repo owner/repo
 
 ## 検証
 
-ゲートを編集したら、**故意破壊で「本当に落ちるか」を実測する**（PASS するだけでは「見ていない」と区別が付かない）。最低限の 4 パターン:
+ゲートを編集したら、**故意破壊で「本当に落ちるか」を実測する**（PASS するだけでは「見ていない」と区別が付かない）。
 
-1. 文言のみの変更 → PASS
-2. 定数値・条件式の変更 → NG（構造差分）
-3. パス風リテラルの変更 → NG（文言らしくない）
-4. `WORDING_GATE_EXTRA_DENY` で対象パスを足す → NG（denylist）
+固定した diff を `tests/wording-fix-gate/` に置いてあり、`bash tools/validate.sh` の検証 5 が毎回回す:
+
+| ディレクトリ | 期待 |
+|---|---|
+| `pass/` | 文言のみの変更 → PASS |
+| `ng/` | 構造差分 / パス風リテラル / denylist / 新規ファイル / 行数不一致 / 対象外拡張子 / 空 diff → NG |
+| `config-pass/` `config-ng/` | 設定を渡したときと渡さないときで**結果が逆になる**（設定が実際に読まれていることの証明） |
+
+🔴 **設定ケースは「設定あり」の結果だけ見ても意味がない。** 設定が一切読まれていなくても偶然一致しうるので、**渡さなかったときに逆の結果になる**ところまで固定する。
+
+ケースを足したら、そのケースが**本当に落ちるか**（分類器を一時的に素通しへ改悪して FAIL するか）まで確かめること。

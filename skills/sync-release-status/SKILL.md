@@ -14,7 +14,7 @@ allowed-tools: Bash(bash *), Bash(gh *), Bash(jq *), Bash(awk *), Read, Write, A
 ## 前提
 
 ```bash
-DEVKIT_ENV=$(bash .claude/devkit/config.sh) || exit 1
+DEVKIT_ENV=$(bash "$(git rev-parse --show-toplevel)/.claude/devkit/config.sh") || exit 1
 eval "$DEVKIT_ENV"
 [ "$DEVKIT_TRACKER" = "github-project" ] || { echo "tracker.type が github-project でないため利用不可"; exit 0; }
 
@@ -70,7 +70,7 @@ gh pr view "$NUM" --repo "$REPO" --json body --jq .body \
 1. Project から**「クリーンな遷移元」と「要判断の遷移元」の両方**の Issue 一覧を取得する（毎回 fresh）:
 
 ```bash
-bash .claude/devkit/project-items-fetch.sh /tmp/srs_items.json
+bash "$DEVKIT_ROOT/.claude/devkit/project-items-fetch.sh" /tmp/srs_items.json
 jq -r '.items[] | select(.status == "<クリーンな遷移元>" or .status == "<要判断の遷移元>")
        | "\(.content.number)\t\(.id)\t\(.status)\t\(.content.title)"' /tmp/srs_items.json
 ```

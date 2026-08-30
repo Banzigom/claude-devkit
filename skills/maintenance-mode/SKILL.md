@@ -20,7 +20,7 @@ allowed-tools: Bash(bash *), Bash(git *), Bash(gh *), Bash(make *), Bash(kubectl
 ### 0. 前提確認
 
 ```bash
-DEVKIT_ENV=$(bash .claude/devkit/config.sh) || exit 1
+DEVKIT_ENV=$(bash "$(git rev-parse --show-toplevel)/.claude/devkit/config.sh") || exit 1
 eval "$DEVKIT_ENV"
 jq -r '.siblingRepos[]? | select(.name == "'"$DEVKIT_INFRA_IAC_REPO"'") | .path' "$DEVKIT_CONFIG"
 ```

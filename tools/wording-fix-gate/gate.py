@@ -3,7 +3,7 @@
 """wording-fix-gate: unified diff が「文言修正程度」かを機械判定する (fail-closed)。
 
 「文言修正程度」の定義（すべて満たすこと）:
-  - 変更ファイル数 <= MAX_FILES / 変更行数(+/-合計) <= MAX_CHANGED_LINES
+  - 変更ファイル数 <= maxFiles / 変更行数(+/-合計) <= maxChangedLines（既定 5 / 80）
   - 新規追加・削除・rename・バイナリ変更を含まない（既存ファイルの修正のみ）
   - denylist パス（CI 設定 / .claude / migrations / schema / lock / env / terraform /
     k8s / shell / SQL / YAML 等、文字列変更が挙動変更になり得る領域）を含まない
@@ -16,9 +16,14 @@
 
 判定不能・想定外はすべて不合格（fail-closed）。合格 exit 0 / 不合格 exit 1。
 
-denylist はプロジェクト固有の「文字列変更が挙動変更になり得る領域」を足せる。
-環境変数 WORDING_GATE_EXTRA_DENY に正規表現を `:` 区切りで渡す
-（例: WORDING_GATE_EXTRA_DENY='^config/secrets/:(^|/)tenant_settings\.py$'）。
+閾値と denylist は `.claude/devkit.json` の `wordingGate` セクションで差し替える
+（柱4「プロジェクト固有値は 1 箇所に集約する」）:
+
+    "wordingGate": { "maxFiles": 5, "maxChangedLines": 80, "extraDeny": ["^config/secrets/"] }
+
+設定ファイルが**壊れている場合は fail-closed**（既定値へ黙って落ちない）。
+環境変数 WORDING_GATE_EXTRA_DENY（`:` 区切りの正規表現）でも足せる。両方指定すれば両方効く。
+WORDING_GATE_CONFIG で設定ファイルのパスを明示できる（テスト用）。
 
 使い方:
   git diff origin/<base>...HEAD | python3 .claude/devkit/wording-fix-gate/gate.py --stdin
@@ -26,13 +31,14 @@ denylist はプロジェクト固有の「文字列変更が挙動変更にな�
 """
 
 import argparse
+import json
 import os
 import re
 import subprocess
 import sys
 
-MAX_FILES = 5
-MAX_CHANGED_LINES = 80
+DEFAULT_MAX_FILES = 5
+DEFAULT_MAX_CHANGED_LINES = 80
 
 # 文字列変更ですら挙動変更になり得る領域・自動マージ経路から自己改変可能な領域
 DENY_PATH_PATTERNS = [
@@ -58,11 +64,79 @@ DENY_PATH_PATTERNS = [
     r"\.mise[^/]*\.toml$",
 ]
 
-# プロジェクト固有の denylist を環境変数で足す（`:` 区切りの正規表現）。
-# 不正な正規表現は「判定不能」なので fail-closed に倒す（後段の evaluate で例外→NG）。
-_extra = os.environ.get("WORDING_GATE_EXTRA_DENY", "").strip()
-if _extra:
-    DENY_PATH_PATTERNS = DENY_PATH_PATTERNS + [p for p in _extra.split(":") if p]
+
+class ConfigError(Exception):
+    """設定を読めない/壊れている。判定不能なので fail-closed に倒す。"""
+
+
+def _config_path():
+    """.claude/devkit.json の在り処。無ければ None（＝既定値で動く）。"""
+    override = os.environ.get("WORDING_GATE_CONFIG", "").strip()
+    if override:
+        return override if os.path.exists(override) else None
+    root = ""
+    try:
+        r = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            capture_output=True, text=True, timeout=10,
+        )
+        if r.returncode == 0:
+            root = r.stdout.strip()
+    except Exception:
+        root = ""
+    path = os.path.join(root or ".", ".claude", "devkit.json")
+    return path if os.path.exists(path) else None
+
+
+def load_config():
+    """(max_files, max_changed_lines, deny_patterns) を返す。
+
+    設定ファイルが在るのに読めない・型が違う場合は ConfigError。
+    「壊れた設定を既定値で黙って読み替える」と、denylist を足したつもりの
+    プロジェクトが素通しになるため、fail-closed にする。
+    """
+    max_files = DEFAULT_MAX_FILES
+    max_lines = DEFAULT_MAX_CHANGED_LINES
+    deny = list(DENY_PATH_PATTERNS)
+
+    path = _config_path()
+    if path:
+        try:
+            with open(path, "r", encoding="utf-8") as fp:
+                cfg = json.load(fp)
+        except Exception as e:
+            raise ConfigError("%s を読めない (%s: %s)" % (path, type(e).__name__, e))
+        section = cfg.get("wordingGate") or {}
+        if not isinstance(section, dict):
+            raise ConfigError("%s: wordingGate はオブジェクトである必要がある" % path)
+        if section.get("maxFiles") is not None:
+            max_files = _positive_int(section["maxFiles"], "wordingGate.maxFiles", path)
+        if section.get("maxChangedLines") is not None:
+            max_lines = _positive_int(section["maxChangedLines"], "wordingGate.maxChangedLines", path)
+        extra = section.get("extraDeny") or []
+        if not isinstance(extra, list):
+            raise ConfigError("%s: wordingGate.extraDeny は配列である必要がある" % path)
+        deny += [str(x) for x in extra if str(x)]
+
+    env_extra = os.environ.get("WORDING_GATE_EXTRA_DENY", "").strip()
+    if env_extra:
+        deny += [p for p in env_extra.split(":") if p]
+
+    # 不正な正規表現は「判定不能」。ここで弾かないと re.search が例外を投げ、
+    # denylist の残りが評価されないまま別の理由で落ちて原因が分からなくなる。
+    for pat in deny:
+        try:
+            re.compile(pat)
+        except re.error as e:
+            raise ConfigError("denylist の正規表現が不正: %r (%s)" % (pat, e))
+    return max_files, max_lines, deny
+
+
+def _positive_int(value, label, path):
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        raise ConfigError("%s: %s は正の整数である必要がある (%r)" % (path, label, value))
+    return value
+
 
 DOC_EXTS = {".md", ".mdx", ".txt"}
 JS_EXTS = {".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"}
@@ -183,6 +257,7 @@ def parse_diff(text):
 
 def evaluate(diff_text):
     """(ok: bool, report: str) を返す。例外時も呼び出し側で不合格に倒すこと。"""
+    max_files, max_changed_lines, deny_patterns = load_config()
     reasons = []
     if not diff_text or not diff_text.strip():
         return False, "diff が空（取得失敗 or 差分なし）"
@@ -191,13 +266,13 @@ def evaluate(diff_text):
     if not files:
         return False, "diff を解析できない（unified diff 形式でない）"
 
-    if len(files) > MAX_FILES:
-        reasons.append("変更ファイル数 %d > 上限 %d" % (len(files), MAX_FILES))
+    if len(files) > max_files:
+        reasons.append("変更ファイル数 %d > 上限 %d" % (len(files), max_files))
 
     total_lines = 0
     for f in files:
         ext = os.path.splitext(f.path)[1].lower()
-        for pat in DENY_PATH_PATTERNS:
+        for pat in deny_patterns:
             if re.search(pat, f.path):
                 reasons.append("denylist パス: %s (pattern: %s)" % (f.path, pat))
                 break
@@ -224,8 +299,8 @@ def evaluate(diff_text):
                 if why:
                     reasons.append("%s: %s" % (f.path, why))
 
-    if total_lines > MAX_CHANGED_LINES:
-        reasons.append("変更行数 %d > 上限 %d" % (total_lines, MAX_CHANGED_LINES))
+    if total_lines > max_changed_lines:
+        reasons.append("変更行数 %d > 上限 %d" % (total_lines, max_changed_lines))
 
     if reasons:
         return False, "\n".join("- " + r for r in reasons)

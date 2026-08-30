@@ -8,7 +8,7 @@ allowed-tools: Bash(bash *), Bash(git *), Bash(make *), Bash(npx *), Bash(jq *),
 # assist-migration — スキーマ変更とマイグレーション
 
 ```bash
-DEVKIT_ENV=$(bash .claude/devkit/config.sh) || exit 1
+DEVKIT_ENV=$(bash "$(git rev-parse --show-toplevel)/.claude/devkit/config.sh") || exit 1
 eval "$DEVKIT_ENV"
 jq -r '.database.schemas[]? | [.name, .path, .engine, .migrateCommand] | @tsv' "$DEVKIT_CONFIG"
 ```

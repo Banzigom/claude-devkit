@@ -1,7 +1,7 @@
 ---
 name: local-init
 description: ローカル開発環境の初回セットアップを対話的にガイドする。前提ツール確認 → 環境ファイル配置 → 依存インストール → DB 起動 → マイグレーション → 起動 → 初期データ投入 まで。「ローカル環境構築」「local init」「セットアップ」と言われた時に使用してください。
-allowed-tools: Bash(bash *), Bash(git *), Bash(gh *), Bash(mise *), Bash(make *), Bash(npm *), Bash(yarn *), Bash(pnpm *), Bash(docker *), Bash(curl *), Bash(lsof *), Bash(jq *), Read, Edit, Write, Glob, Grep, AskUserQuestion
+allowed-tools: Bash(bash *), Bash(git *), Bash(gh *), Bash(mise *), Bash(make *), Bash(npm *), Bash(yarn *), Bash(pnpm *), Bash(docker compose:*), Bash(docker ps:*), Bash(docker images:*), Bash(curl *), Bash(lsof *), Bash(jq *), Read, Edit, Write, Glob, Grep, AskUserQuestion
 ---
 
 # local-init — ローカル環境の初回セットアップ
@@ -19,7 +19,7 @@ allowed-tools: Bash(bash *), Bash(git *), Bash(gh *), Bash(mise *), Bash(make *)
 ## Phase 0b: 前提ツールとランタイム
 
 ```bash
-DEVKIT_ENV=$(bash .claude/devkit/config.sh) || exit 1
+DEVKIT_ENV=$(bash "$(git rev-parse --show-toplevel)/.claude/devkit/config.sh") || exit 1
 eval "$DEVKIT_ENV"
 ```
 

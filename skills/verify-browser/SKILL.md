@@ -29,7 +29,7 @@ allowed-tools: AskUserQuestion, ToolSearch, Bash(bash *), Bash(mkdir *), Bash(cp
 ## 前提
 
 ```bash
-DEVKIT_ENV=$(bash .claude/devkit/config.sh) || exit 1
+DEVKIT_ENV=$(bash "$(git rev-parse --show-toplevel)/.claude/devkit/config.sh") || exit 1
 eval "$DEVKIT_ENV"
 ```
 

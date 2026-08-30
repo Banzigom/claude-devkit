@@ -58,7 +58,7 @@ printf 'export DEVKIT_CONFIG=%s\n' "$(printf '%q' "$CFG")"
 emit DEVKIT_REPO              '.repo'
 emit DEVKIT_BASE_BRANCH       '.baseBranch' 'main'
 emit DEVKIT_BRANCH_PREFIX     '.branchPrefix' 'feature/'
-emit DEVKIT_COMMIT_LANG       '.commitLanguage' 'en'
+emit DEVKIT_COMMIT_LANG       '.commitLanguage' 'ja'
 
 emit DEVKIT_CMD_LINT          '.commands.lint'
 emit DEVKIT_CMD_FORMAT        '.commands.format'

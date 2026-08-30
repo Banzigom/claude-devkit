@@ -19,7 +19,7 @@ allowed-tools: Bash(bash *), Bash(git *), Bash(gh *), Bash(make *), Bash(jq *), 
 ## Step 1: 現在の設定の確認
 
 ```bash
-DEVKIT_ENV=$(bash .claude/devkit/config.sh) || exit 1
+DEVKIT_ENV=$(bash "$(git rev-parse --show-toplevel)/.claude/devkit/config.sh") || exit 1
 eval "$DEVKIT_ENV"
 ```
 

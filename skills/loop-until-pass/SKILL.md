@@ -34,7 +34,7 @@ allowed-tools: Skill, Agent, Bash(*), Read, Edit, Glob, Grep, AskUserQuestion
 ### 1. 設定と引数の解釈
 
 ```bash
-DEVKIT_ENV=$(bash .claude/devkit/config.sh) || exit 1
+DEVKIT_ENV=$(bash "$(git rev-parse --show-toplevel)/.claude/devkit/config.sh") || exit 1
 eval "$DEVKIT_ENV"
 ```
 

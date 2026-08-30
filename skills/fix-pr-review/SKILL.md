@@ -39,7 +39,7 @@ PR のレビューコメントを取得し、各コメントの対応を決め�
 ### 1. 設定・PR 番号・モードの確定
 
 ```bash
-DEVKIT_ENV=$(bash .claude/devkit/config.sh) || exit 1
+DEVKIT_ENV=$(bash "$(git rev-parse --show-toplevel)/.claude/devkit/config.sh") || exit 1
 eval "$DEVKIT_ENV"
 cd "$DEVKIT_ROOT"
 

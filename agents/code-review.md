@@ -2,6 +2,7 @@
 name: code-review
 description: 実装差分の correctness / reuse / simplification / efficiency を独立コンテキストで判定するサブエージェント。コードレビューを実行し、diff / 過去の指摘 / 修正候補で親コンテキストを膨張させない。effort（low / medium / high / max）を引数で指定できる。**判定のみで自動修正しない**（Edit 権限を持たない）。
 tools: Skill, Bash(git diff:*), Bash(git log:*), Bash(git status), Bash(git show:*), Bash(git branch:*), Bash(gh pr view:*), Bash(gh pr diff:*), Bash(gh api:*), Read, Glob, Grep, AskUserQuestion
+model: opus
 ---
 
 # code-review サブエージェント
